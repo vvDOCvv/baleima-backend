@@ -1,0 +1,92 @@
+
+<!DOCTYPE html>
+<html lang="ru-ru" dir="ltr">
+<head>
+<title>ATHkeeper admin</title>
+  <link rel="stylesheet" href="/static/admin/css/base.css">
+  <link rel="stylesheet" href="/static/admin/css/dark_mode.css">
+  <script src="/static/admin/js/theme.js" defer></script>
+  <link rel="stylesheet" href="/static/admin/css/nav_sidebar.css">
+  <script src="/static/admin/js/nav_sidebar.js" defer></script>
+  <link rel="stylesheet" href="/static/admin/css/dashboard.css">
+  <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <link rel="stylesheet" href="/static/admin/css/responsive.css">
+  <meta name="robots" content="NONE,NOARCHIVE">
+</head>
+<body class=" dashboard" data-admin-utc-offset="0">
+  <a href="#content-start" class="skip-to-content-link">Skip to main content</a>
+
+  <!-- Container -->
+  <div id="container">
+
+    <!-- Header -->
+    <div id="header">
+      <div id="branding">
+        <h1 id="site-name">
+          <a href="/admin/">Администрирование ATHkeeper</a>
+        </h1>
+      </div>
+      <div id="user-tools">Добро пожаловать,
+        <strong>purkhanov</strong>.
+        <a href="/">Открыть сайт</a> /
+        <a href="/admin/password_change/">Изменить пароль</a> /
+        <form id="logout-form" method="post" action="/admin/logout/">
+          <input type="hidden" name="csrfmiddlewaretoken" value="RGaNDZJrxC9ZkGWjjotpsVaokUS2rAzEc6chmElZOUwrZsJv6D6PnxbCwoNCuws0">
+          <button type="submit">Выйти</button>
+        </form>
+      </div>
+    </div>
+    <!-- END Header -->
+
+    <div class="main" id="main">
+      <div id="content-start" class="content" tabindex="-1">
+        <!-- Content -->
+        <div id="content" class="colMS">
+          <h1>Администрирование сайта</h1>
+          <div id="content-main">
+            <div class="app-trade module">
+              <table>
+                <caption>
+                  <a href="/admin/trade/" class="section" title="Модели в приложении Trade">Trade</a>
+                </caption>
+                <tr class="model-websocketinfomsg">
+                  <th scope="row"><a href="/admin/trade/websocketinfomsg/">Вебсокет инфо</a></th>
+                  <td><a href="/admin/trade/websocketinfomsg/add/" class="addlink">Добавить</a></td>
+                  <td><a href="/admin/trade/websocketinfomsg/" class="changelink">Изменить</a></td>
+                </tr>
+                <tr class="model-autotradeerrormsg">
+                  <th scope="row"><a href="/admin/trade/autotradeerrormsg/">Ошибки</a></th>
+                  <td><a href="/admin/trade/autotradeerrormsg/add/" class="addlink">Добавить</a></td>
+                  <td><a href="/admin/trade/autotradeerrormsg/" class="changelink">Изменить</a></td>
+                </tr>
+                <tr class="model-tradeinfo">
+                  <th scope="row"><a href="/admin/trade/tradeinfo/">Трейдинг</a></th>
+                  <td><a href="/admin/trade/tradeinfo/add/" class="addlink">Добавить</a></td>
+                  <td><a href="/admin/trade/tradeinfo/" class="changelink">Изменить</a></td>
+                </tr>
+              </table>
+            </div>
+            <div class="app-users module">
+              <table>
+                <caption>
+                  <a href="/admin/users/" class="section" title="Модели в приложении Users">Users</a>
+                </caption>
+                <tr class="model-user">
+                  <th scope="row"><a href="/admin/users/user/">Пользователи</a></th>
+                  <td><a href="/admin/users/user/add/" class="addlink">Добавить</a></td>
+                  <td><a href="/admin/users/user/" class="changelink">Изменить</a></td>
+                </tr>
+              </table>
+            </div>
+          </div>
+          <br class="clear">
+        </div>
+        <!-- END Content -->
+
+        <div id="footer"></div>
+      </div>
+    </div>
+  </div>
+  <!-- END Container -->
+</body>
+</html>

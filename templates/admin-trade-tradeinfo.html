@@ -1,0 +1,287 @@
+
+<!DOCTYPE html>
+<html lang="ru-ru" dir="ltr">
+<head>
+  <title>Выберите Трейдинг для изменения | Административный сайт Django</title>
+  <link rel="stylesheet" href="/static/admin/css/base.css">
+  <link rel="stylesheet" href="/static/admin/css/dark_mode.css">
+  <script src="/static/admin/js/theme.js" defer></script>
+  <link rel="stylesheet" href="/static/admin/css/nav_sidebar.css">
+  <script src="/static/admin/js/nav_sidebar.js" defer></script>
+  <link rel="stylesheet" href="/static/admin/css/changelists.css">
+  <script src="/admin/jsi18n/"></script>
+  <script src="/static/admin/js/vendor/jquery/jquery.js"></script>
+  <script src="/static/admin/js/jquery.init.js"></script>
+  <script src="/static/admin/js/core.js"></script>
+  <script src="/static/admin/js/admin/RelatedObjectLookups.js"></script>
+  <script src="/static/admin/js/actions.js"></script>
+  <script src="/static/admin/js/urlify.js"></script>
+  <script src="/static/admin/js/prepopulate.js"></script>
+  <script src="/static/admin/js/vendor/xregexp/xregexp.js"></script>
+  <script src="/static/admin/js/filters.js" defer></script>
+  <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <link rel="stylesheet" href="/static/admin/css/responsive.css">
+  <meta name="robots" content="NONE,NOARCHIVE">
+</head>
+<body class=" app-trade model-tradeinfo change-list" data-admin-utc-offset="0">
+  <a href="#content-start" class="skip-to-content-link">Skip to main content</a>
+
+  <!-- Container -->
+  <div id="container">
+
+    <!-- Header -->
+    <div id="header">
+      <div id="branding">
+        <h1 id="site-name"><a href="/admin/">Администрирование Django</a></h1>
+      </div>
+      <div id="user-tools">Добро пожаловать, <strong>purkhanov</strong>. <a href="/">Открыть сайт</a> / <a href="/admin/password_change/">Изменить пароль</a> /
+        <form id="logout-form" method="post" action="/admin/logout/">
+          <input type="hidden" name="csrfmiddlewaretoken" value="Hp1fCRX5YYkPolekkIfTIRgvrqGbLhHS2P3JlwzDfgHh371w7XSjDthJDUBLOdAe">
+          <button type="submit">Выйти</button>
+        </form>
+      </div>
+    </div>
+    <!-- END Header -->
+
+    <nav aria-label="Breadcrumbs">
+      <div class="breadcrumbs">
+        <a href="/admin/">Начало</a>
+        &rsaquo; <a href="/admin/trade/">Trade</a>
+        &rsaquo; Трейдинг
+      </div>
+    </nav>
+    <div class="main" id="main">
+      <button class="sticky toggle-nav-sidebar" id="toggle-nav-sidebar" aria-label="Переключить навигацию"></button>
+      <nav class="sticky" id="nav-sidebar" aria-label="Sidebar">
+        <input type="search" id="nav-filter" placeholder="Начните печатать для фильтрации..." aria-label="Фильтр элементов навигации">
+        <div class="app-trade module current-app">
+          <table>
+            <caption>
+              <a href="/admin/trade/" class="section" title="Модели в приложении Trade">Trade</a>
+            </caption>
+            <tr class="model-websocketinfomsg">
+              <th scope="row"><a href="/admin/trade/websocketinfomsg/">Вебсокет инфо</a></th>
+              <td><a href="/admin/trade/websocketinfomsg/add/" class="addlink">Добавить</a></td>
+            </tr>
+            <tr class="model-autotradeerrormsg">
+              <th scope="row"><a href="/admin/trade/autotradeerrormsg/">Ошибки</a></th>
+              <td><a href="/admin/trade/autotradeerrormsg/add/" class="addlink">Добавить</a></td>
+            </tr>
+            <tr class="model-tradeinfo current-model">
+              <th scope="row"><a href="/admin/trade/tradeinfo/" aria-current="page">Трейдинг</a></th>
+              <td><a href="/admin/trade/tradeinfo/add/" class="addlink">Добавить</a></td>
+            </tr>
+          </table>
+        </div>
+        <div class="app-users module">
+          <table>
+            <caption>
+              <a href="/admin/users/" class="section" title="Модели в приложении Users">Users</a>
+            </caption>
+            <tr class="model-user">
+              <th scope="row"><a href="/admin/users/user/">Пользователи</a></th>
+              <td><a href="/admin/users/user/add/" class="addlink">Добавить</a></td>
+            </tr>
+          </table>
+        </div>
+        <div class="app-authtoken module">
+          <table>
+            <caption>
+              <a href="/admin/authtoken/" class="section" title="Модели в приложении Токен аутентификации">Токен аутентификации</a>
+            </caption>
+            <tr class="model-tokenproxy">
+              <th scope="row"><a href="/admin/authtoken/tokenproxy/">Tokens</a></th>
+              <td><a href="/admin/authtoken/tokenproxy/add/" class="addlink">Добавить</a></td>
+            </tr>
+          </table>
+        </div>
+      </nav>
+      <div id="content-start" class="content" tabindex="-1">
+        <!-- Content -->
+        <div id="content" class="">
+          <h1>Выберите Трейдинг для изменения</h1>
+          <div id="content-main">
+            <ul class="object-tools">
+              <li><a href="/admin/trade/tradeinfo/add/" class="addlink">Добавить Трейдинг</a></li>
+            </ul>
+            <div class="module" id="changelist">
+              <div class="changelist-form-container">
+                <form id="changelist-form" method="post" novalidate>
+                  <input type="hidden" name="csrfmiddlewaretoken" value="Hp1fCRX5YYkPolekkIfTIRgvrqGbLhHS2P3JlwzDfgHh371w7XSjDthJDUBLOdAe">
+                  <div class="actions">
+                    <label>Действие:
+                      <select name="action" required>
+                        <option value="" selected>---------</option>
+                        <option value="delete_selected">Удалить выбранные Трейдинг</option>
+                      </select>
+                    </label>
+                    <input type="hidden" name="select_across" value="0" class="select-across">
+                    <button type="submit" class="button" title="Выполнить выбранное действие" name="index" value="0">Выполнить</button>
+                    <span class="action-counter" data-actions-icnt="100">Выбрано 0 объектов из 100 </span>
+                    <span class="all hidden">Выбраны все 103</span>
+                    <span class="question hidden"><a href="#" title="Нажмите здесь, чтобы выбрать объекты на всех страницах">Выбрать все Трейдинг (103)</a></span>
+                    <span class="clear hidden"><a href="#">Снять выделение</a></span>
+                  </div>
+                  <div class="results">
+                    <table id="result_list">
+                      <thead>
+                        <tr>
+                          <th scope="col" class="action-checkbox-column">
+                            <div class="text"><span><input type="checkbox" id="action-toggle"></span></div>
+                            <div class="clear"></div>
+                          </th>
+                          <th scope="col" class="sortable column-symbol">
+                            <div class="text"><a href="?o=1">Символ</a></div>
+                            <div class="clear"></div>
+                          </th>
+                          <th scope="col" class="sortable column-buy_kaspa_quantity">
+                            <div class="text"><a href="?o=2">Куплено</a></div>
+                            <div class="clear"></div>
+                          </th>
+                          <th scope="col" class="sortable column-cummulative_quote_qty">
+                            <div class="text"><a href="?o=3">Потрачено</a></div>
+                            <div class="clear"></div>
+                          </th>
+                          <th scope="col" class="sortable column-buy_price">
+                            <div class="text"><a href="?o=4">Цена покупки</a></div>
+                            <div class="clear"></div>
+                          </th>
+                          <th scope="col" class="sortable column-sell_price">
+                            <div class="text"><a href="?o=5">Цена продажи</a></div>
+                            <div class="clear"></div>
+                          </th>
+                          <th scope="col" class="sortable column-profit">
+                            <div class="text"><a href="?o=6">Маржа</a></div>
+                            <div class="clear"></div>
+                          </th>
+                          <th scope="col" class="sortable column-status">
+                            <div class="text"><a href="?o=7">Статус</a></div>
+                            <div class="clear"></div>
+                          </th>
+                          <th scope="col" class="sortable column-user">
+                            <div class="text"><a href="?o=8">User</a></div>
+                            <div class="clear"></div>
+                          </th>
+                          <th scope="col" class="sortable column-date_time">
+                            <div class="text"><a href="?o=9">Date time</a></div>
+                            <div class="clear"></div>
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td class="action-checkbox"><input type="checkbox" name="_selected_action" value="128" class="action-select"></td>
+                          <th class="field-symbol"><a href="/admin/trade/tradeinfo/128/change/">KASUSDT</a></th>
+                          <td class="field-buy_kaspa_quantity">48,43</td>
+                          <td class="field-cummulative_quote_qty">5,73086719</td>
+                          <td class="field-buy_price">0,118333</td>
+                          <td class="field-sell_price">0,118688</td>
+                          <td class="field-profit">-</td>
+                          <td class="field-status">NEW</td>
+                          <td class="field-user nowrap">purkhanov</td>
+                          <td class="field-date_time nowrap">12 января 2024 г. 18:59</td>
+                        </tr>
+                        <tr>
+                          <td class="action-checkbox"><input type="checkbox" name="_selected_action" value="127" class="action-select"></td>
+                          <th class="field-symbol"><a href="/admin/trade/tradeinfo/127/change/">KASUSDT</a></th>
+                          <td class="field-buy_kaspa_quantity">48,29</td>
+                          <td class="field-cummulative_quote_qty">5,71430057</td>
+                          <td class="field-buy_price">0,118333</td>
+                          <td class="field-sell_price">0,118688</td>
+                          <td class="field-profit">-</td>
+                          <td class="field-status">NEW</td>
+                          <td class="field-user nowrap">purkhanov</td>
+                          <td class="field-date_time nowrap">12 января 2024 г. 18:59</td>
+                        </tr>
+                        <tr>
+                          <td class="action-checkbox"><input type="checkbox" name="_selected_action" value="126" class="action-select"></td>
+                          <th class="field-symbol"><a href="/admin/trade/tradeinfo/126/change/">KASUSDT</a></th>
+                          <td class="field-buy_kaspa_quantity">48,39</td>
+                          <td class="field-cummulative_quote_qty">5,71379442</td>
+                          <td class="field-buy_price">0,118078</td>
+                          <td class="field-sell_price">0,118432</td>
+                          <td class="field-profit">-</td>
+                          <td class="field-status">NEW</td>
+                          <td class="field-user nowrap">purkhanov</td>
+                          <td class="field-date_time nowrap">12 января 2024 г. 18:57</td>
+                        </tr>
+                        <tr>
+                          <td class="action-checkbox"><input type="checkbox" name="_selected_action" value="125" class="action-select"></td>
+                          <th class="field-symbol"><a href="/admin/trade/tradeinfo/125/change/">KASUSDT</a></th>
+                          <td class="field-buy_kaspa_quantity">48,39</td>
+                          <td class="field-cummulative_quote_qty">5,71379442</td>
+                          <td class="field-buy_price">0,118078</td>
+                          <td class="field-sell_price">0,118432</td>
+                          <td class="field-profit">-</td>
+                          <td class="field-status">NEW</td>
+                          <td class="field-user nowrap">purkhanov</td>
+                          <td class="field-date_time nowrap">12 января 2024 г. 18:57</td>
+                        </tr>
+                        <tr>
+                          <td class="action-checkbox"><input type="checkbox" name="_selected_action" value="124" class="action-select"></td>
+                          <th class="field-symbol"><a href="/admin/trade/tradeinfo/124/change/">KASUSDT</a></th>
+                          <td class="field-buy_kaspa_quantity">48,39</td>
+                          <td class="field-cummulative_quote_qty">5,71379442</td>
+                          <td class="field-buy_price">0,118078</td>
+                          <td class="field-sell_price">0,118432</td>
+                          <td class="field-profit">-</td>
+                          <td class="field-status">NEW</td>
+                          <td class="field-user nowrap">purkhanov</td>
+                          <td class="field-date_time nowrap">12 января 2024 г. 18:57</td>
+                        </tr>
+                        <tr>
+                          <td class="action-checkbox"><input type="checkbox" name="_selected_action" value="123" class="action-select"></td>
+                          <th class="field-symbol"><a href="/admin/trade/tradeinfo/123/change/">KASUSDT</a></th>
+                          <td class="field-buy_kaspa_quantity">48,39</td>
+                          <td class="field-cummulative_quote_qty">5,71379442</td>
+                          <td class="field-buy_price">0,118078</td>
+                          <td class="field-sell_price">0,118432</td>
+                          <td class="field-profit">-</td>
+                          <td class="field-status">NEW</td>
+                          <td class="field-user nowrap">purkhanov</td>
+                          <td class="field-date_time nowrap">12 января 2024 г. 18:57</td>
+                        </tr>
+                        <tr>
+                          <td class="action-checkbox"><input type="checkbox" name="_selected_action" value="122" class="action-select"></td>
+                          <th class="field-symbol"><a href="/admin/trade/tradeinfo/122/change/">KASUSDT</a></th>
+                          <td class="field-buy_kaspa_quantity">48,46</td>
+                          <td class="field-cummulative_quote_qty">5,7267605</td>
+                          <td class="field-buy_price">0,118175</td>
+                          <td class="field-sell_price">0,11853</td>
+                          <td class="field-profit">-</td>
+                          <td class="field-status">NEW</td>
+                          <td class="field-user nowrap">purkhanov</td>
+                          <td class="field-date_time nowrap">12 января 2024 г. 18:06</td>
+                        </tr>
+                        <tr>
+                          <td class="action-checkbox"><input type="checkbox" name="_selected_action" value="121" class="action-select"></td>
+                          <th class="field-symbol"><a href="/admin/trade/tradeinfo/121/change/">KASUSDT</a></th>
+                          <td class="field-buy_kaspa_quantity">48,45</td>
+                          <td class="field-cummulative_quote_qty">5,7127395</td>
+                          <td class="field-buy_price">0,11791</td>
+                          <td class="field-sell_price">0,118264</td>
+                          <td class="field-profit">0,017151</td>
+                          <td class="field-status">FILLED</td>
+                          <td class="field-user nowrap">purkhanov</td>
+                          <td class="field-date_time nowrap">12 января 2024 г. 18:06</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <p class="paginator">
+                    <span class="this-page">1</span><a href="?p=2" class="end">2</a>103 Трейдинг<a href="?all=" class="showall">Показать все</a>
+                  </p>
+                </form>
+              </div>
+            </div>
+          </div>
+          <br class="clear">
+        </div>
+        <!-- END Content -->
+        <div id="footer"></div>
+      </div>
+    </div>
+  </div>
+  <!-- END Container -->
+</body>
+</html>
