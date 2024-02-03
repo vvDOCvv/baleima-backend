@@ -1,0 +1,110 @@
+
+{% extends 'base.html' %}
+
+{% block links %}
+  <link rel="stylesheet" href="/static/admin/css/forms.css">
+{% endblock %}
+
+{% block content %}
+  <div id="content-start" class="content" tabindex="-1">
+
+    <!-- Content -->
+    <div id="content" class="colM">
+      <h1>Изменить Трейдинг</h1>
+      <h2>{{ trade.user }}</h2>
+      <div id="content-main">
+        <form method="post" id="tradeinfo_form" novalidate>
+          <div>
+            <fieldset class="module aligned ">
+              <div class="form-row field-symbol">
+                <div>
+                  <div class="flex-container">
+                    <label class="required" for="id_symbol">Символ:</label>
+                    <input type="text" name="symbol" value="{{ trade.symbol }}" class="vTextField" maxlength="10" required id="id_symbol">
+                  </div>
+                </div>
+              </div>
+              <div class="form-row field-buy_kaspa_quantity">
+                <div>
+                  <div class="flex-container">
+                    <label for="id_buy_kaspa_quantity">Куплено:</label>
+                    <input type="number" name="buy_kaspa_quantity" value="{{ trade.buy_quantity}}" step="any" id="id_buy_kaspa_quantity">
+                  </div>
+                </div>
+              </div>
+              <div class="form-row field-cummulative_quote_qty">
+                <div>
+                  <div class="flex-container">
+                    <label for="id_cummulative_quote_qty">Потрачено:</label>
+                    <input type="number" name="cummulative_quote_qty" value="{{ trade.cummulative_qoute_qty}}" step="any" id="id_cummulative_quote_qty">
+                  </div>
+                </div>
+              </div>
+              <div class="form-row field-buy_order_id">
+                <div>
+                  <div class="flex-container">
+                    <label for="id_buy_order_id">ID покупки:</label>
+                    <input type="text" name="buy_order_id" value="{{ trade.buy_order_id}}" class="vTextField" maxlength="100" id="id_buy_order_id">
+                  </div>
+                </div>
+              </div>
+              <div class="form-row field-buy_price">
+                <div>
+                  <div class="flex-container">
+                    <label for="id_buy_price">Цена покупки:</label>
+                    <input type="number" name="buy_price" value="{{ trade.buy_price}}" step="any" id="id_buy_price">
+                  </div>
+                </div>
+              </div>
+              <div class="form-row field-sell_order_id">
+                <div>
+                  <div class="flex-container">
+                    <label for="id_sell_order_id">ID продажи:</label>
+                    <input type="text" name="sell_order_id" value="{{ trade.sell_order_id}}" class="vTextField" maxlength="50" id="id_sell_order_id">
+                  </div>
+                </div>
+              </div>
+              <div class="form-row field-sell_price">
+                <div>
+                  <div class="flex-container">
+                    <label for="id_sell_price">Цена продажи:</label>
+                    <input type="number" name="sell_price" value="{{ trade.sell_price}}" step="any" id="id_sell_price">
+                  </div>
+                </div>
+              </div>
+              <div class="form-row field-profit">
+                <div>
+                  <div class="flex-container">
+                    <label for="id_profit">Маржа:</label>
+                    <input type="number" name="profit" value="{{ trade.profit}}"  step="any" id="id_profit">
+                  </div>
+                </div>
+              </div>
+              <div class="form-row field-status">
+                <div>
+                  <div class="flex-container">
+                    <label for="id_status">Статус:</label>
+                    <input type="text" name="status" value="{{ trade.status}}" class="vTextField" maxlength="30" id="id_status">
+                  </div>
+                </div>
+              </div>
+              <div class="form-row field-date_time">
+                <div>
+                  <div class="flex-container">
+                    <label>Date time:</label>
+                    <div class="readonly">{{ trade.date_time}}</div>
+                  </div>
+                </div>
+              </div>
+            </fieldset>
+            <div class="submit-row">
+              <input type="submit" value="Сохранить" class="default" name="_save">
+              <a href="#" class="deletelink">Удалить</a>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+    <!-- END Content -->
+  </div>
+{% endblock %}

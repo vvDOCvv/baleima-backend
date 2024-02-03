@@ -1,0 +1,49 @@
+
+<!DOCTYPE html>
+<html lang="ru-ru">
+<head>
+  <meta name="robots" content="NONE,NOARCHIVE">
+  <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+  <title>Административный сайт ATHkeeper</title>
+
+  {% block links %} {% endblock %}
+
+  <link rel="stylesheet" href="/static/admin/css/base.css">
+  <link rel="stylesheet" href="/static/admin/css/nav_sidebar.css">
+  <link rel="stylesheet" href="/static/admin/css/changelists.css">
+  <link rel="stylesheet" href="/static/admin/css/responsive.css">
+  <script src="/static/admin/js/main.js" defer></script>
+</head>
+<body class=" app-trade model-tradeinfo change-form" data-admin-utc-offset="0">
+  <a href="#content-start" class="skip-to-content-link">Skip to main content</a>
+
+  <!-- Container -->
+  <div id="container">
+    <!-- Header -->
+    <div id="header">
+      <div id="branding">
+        <h1 id="site-name">
+          <a href="/admin/">Администрирование ATHkeeper</a>
+        </h1>
+      </div>
+      <div id="user-tools">Добро пожаловать,
+        <strong>{{ admin.username }}</strong>. /
+        <form id="logout-form" method="get" action="/admin/logout/">
+          <input type="hidden">
+          <button type="submit">Выйти</button>
+        </form>
+      </div>
+    </div>
+    <!-- END Header -->
+
+    <div class="main shifted" id="main">
+      {% include 'sidebar.html' %}
+
+      {% block content %} {% endblock %}
+    </div>
+
+  </div>
+  <!-- END Container -->
+</body>
+</html>

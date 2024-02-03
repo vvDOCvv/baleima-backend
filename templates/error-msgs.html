@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+  <div id="content-start" class="content" tabindex="-1">
+    <!-- Content -->
+    <div id="content" class="">
+      <h1>Выберите Вебсокет инфо для изменения</h1>
+      <div id="content-main">
+        <div class="module" id="changelist">
+          <div class="changelist-form-container">
+            <form id="changelist-form" method="post" novalidate>
+              <input type="hidden">
+              <div class="actions">
+                <label>Действие:
+                  <select name="action" required>
+                    <option value="" selected>---------</option>
+                    <option value="delete_selected">Удалить выбранные Вебсокет инфо</option>
+                  </select>
+                </label>
+                <input type="hidden" name="select_across" value="0" class="select-across">
+                <span class="action-counter" data-actions-icnt="9">Выбрано 0 объектов из 0 </span>
+              </div>
+              <div class="results">
+                <table id="result_list">
+
+                  <thead>
+                    <tr>
+                      <th scope="col" class="sortable column-info_msg">
+                        <div class="text"><a>ID</a></div>
+                        <div class="clear"></div>
+                      </th>
+                      <th scope="col" class="sortable column-info_msg">
+                        <div class="text"><a>Текст</a></div>
+                        <div class="clear"></div>
+                      </th>
+                      <th scope="col" class="sortable column-date_time">
+                        <div class="text"><a>Время</a></div>
+                        <div class="clear"></div>
+                      </th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {% for err_msg in err_msgs %}
+                      <tr>
+                        <td class="field-date_time nowrap">{{ err_msg.id }}</td>
+                        <th class="field-info_msg">
+                          <a href="/admin/errors/{{ err_msg.id }}">{{ err_msg.error_msg}}</a>
+                        </th>
+                        <td class="field-date_time nowrap">{{ err_msg.date_time }}</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+
+                </table>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- END Content -->
+  </div>
+{% endblock %}

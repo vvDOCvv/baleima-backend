@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <div id="content-start" class="content" tabindex="-1">
+    <!-- Content -->
+    <div id="content" class="">
+      <h1>Выберите пользователь для изменения</h1>
+      <div id="content-main">
+        <div class="module" id="changelist">
+          <form id="changelist-form" method="post" novalidate>
+            <input type="hidden">
+            <div class="actions">
+              <label>Действие:
+                <select name="action" required>
+                  <option value="" selected>---------</option>
+                  <option value="delete_selected">Удалить выбранные пользователи</option>
+                </select>
+              </label>
+              <input type="hidden" name="select_across" value="0" class="select-across">
+              <span class="action-counter" data-actions-icnt="1">Выбрано 0 объектов из 1 </span>
+            </div>
+            <div class="results">
+              <table id="result_list">
+                <thead>
+                  <tr>
+                    <th scope="col" class="action-checkbox-column">
+                      <div class="text">ID</div>
+                      <div class="clear"></div>
+                    </th>
+                    <th scope="col" class="sortable column-username">
+                      <div class="text"><a>Имя пользователя</a></div>
+                    </th>
+                    <th scope="col" class="sortable column-phone_number">
+                      <div class="text"><a>Номер телефона</a></div>
+                    </th>
+                    <th scope="col" class="sortable column-first_name">
+                      <div class="text"><a>Имя</a></div>
+                    </th>
+                    <th scope="col" class="sortable column-is_staff">
+                      <div class="text"><a>Статус персонала</a></div>
+                    </th>
+                    <th scope="col" class="sortable column-auto_trade">
+                      <div class="text"><a>Авто торговля</a></div>
+                    </th>
+                    <th scope="col" class="sortable column-trade_percent">
+                      <div class="text"><a>Процент торговли</a></div>
+                    </th>
+                    <th scope="col" class="sortable column-trade_usdt_quantity">
+                      <div class="text"><a>Количество торговли</a></div>
+                    </th>
+                    <th scope="col" class="sortable column-ban">
+                      <div class="text"><a>Ограничить доступ</a></div>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for user in users %}
+                    <tr>
+                      <td class="action-checkbox">
+                        <div>{{ user.id }}</div>
+                      </td>
+                      <th class="field-username">
+                        <a href="/admin/users/user/{{ user.id }}">{{ user.username }}</a>
+                      </th>
+                      <td class="field-phone_number">{{ user.phone_number }}</td>
+                      <td class="field-first_name">{{ user.first_name }}</td>
+                      <td class="field-is_staff">
+                        {% if user.is_superuser %}
+                          <img src="/static/admin/img/icon-yes.svg" alt="True">
+                        {% else %}
+                          <img src="/static/admin/img/icon-no.svg" alt="False">
+                        {% endif %}
+                      </td>
+                      <td class="field-auto_trade">
+                        {% if user.auto_trade %}
+                          <img src="/static/admin/img/icon-yes.svg" alt="True">
+                        {% else %}
+                          <img src="/static/admin/img/icon-no.svg" alt="False">
+                        {% endif %}
+
+                      </td>
+                      <td class="field-trade_percent">{{ user.trade_percent }}</td>
+                      <td class="field-trade_usdt_quantity">{{ user.trade_quantity }}</td>
+                      <td class="field-ban">
+                        {% if user.ban %}
+                          <img src="/static/admin/img/icon-no.svg" alt="True">
+                        {% else %}
+                          <img src="/static/admin/img/icon-yes.svg" alt="False">
+                        {% endif %}
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    <!-- END Content -->
+  </div>
+{% endblock %}

@@ -1,0 +1,82 @@
+
+<!DOCTYPE html>
+<html lang="ru-ru" dir="ltr">
+<head>
+  <title>Войти | Административный сайт ATHkeeper</title>
+  <link rel="stylesheet" href="/static/admin/css/base.css">
+  <link rel="stylesheet" href="/static/admin/css/dark_mode.css">
+  <link rel="stylesheet" href="/static/admin/css/nav_sidebar.css">
+  <link rel="stylesheet" href="/static/admin/css/login.css">
+  <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="robots" content="NONE,NOARCHIVE">
+</head>
+<body class=" login" data-admin-utc-offset="0">
+  <a href="#content-start" class="skip-to-content-link">Skip to main content</a>
+  <!-- Container -->
+  <div id="container">
+
+    <!-- Header -->
+    <div id="header">
+      <div id="branding">
+        <h1 id="site-name"><a href="/admin/">Администрирование ATHkeeper</a></h1>
+        <button class="theme-toggle">
+          <div class="visually-hidden theme-label-when-auto">Toggle theme (current theme: auto)</div>
+          <div class="visually-hidden theme-label-when-light">Toggle theme (current theme: light)</div>
+          <div class="visually-hidden theme-label-when-dark">Toggle theme (current theme: dark)</div>
+          <svg aria-hidden="true" class="theme-icon-when-auto">
+            <use xlink:href="#icon-auto" />
+          </svg>
+          <svg aria-hidden="true" class="theme-icon-when-dark">
+            <use xlink:href="#icon-moon" />
+          </svg>
+          <svg aria-hidden="true" class="theme-icon-when-light">
+            <use xlink:href="#icon-sun" />
+          </svg>
+        </button>
+      </div>
+    </div>
+    <!-- END Header -->
+
+    <div class="main" id="main">
+      <div id="content-start" class="content" tabindex="-1">
+        <!-- Content -->
+        <div id="content" class="colM">
+          {% if msg == 'Incorrect Username or Password' %}
+            <p class="errornote">Пожалуйста, введите корректные имя пользователя и пароль учётной записи. Оба поля могут быть чувствительны к регистру.</p>
+          {% endif %}
+          <div id="content-main">
+            <form action="/admin/login" method="post" id="login-form">
+              <input type="hidden">
+              <div class="form-row">
+                <label for="id_username" class="required">Имя пользователя:</label>
+                <input type="text" name="username" autofocus autocapitalize="none" autocomplete="username" maxlength="150" required id="id_username">
+              </div>
+              <div class="form-row">
+                <label for="id_password" class="required">Пароль:</label>
+                <input type="password" name="password" autocomplete="current-password" required id="id_password">
+                <input type="hidden" name="next" value="/admin/">
+              </div>
+              <div class="submit-row">
+                <input type="submit" value="Войти">
+              </div>
+            </form>
+          </div>
+          <br class="clear">
+        </div>
+        <!-- END Content -->
+        <div id="footer"></div>
+      </div>
+    </div>
+  </div>
+  <!-- END Container -->
+</body>
+</html>
+
+
+
+
+
+
+        {% if msg == 'Incorrect Username or Password' %}
+          <p class="errornote">Пожалуйста, введите корректные имя пользователя и пароль учётной записи. Оба поля могут быть чувствительны к регистру.</p>
+        {% endif %}

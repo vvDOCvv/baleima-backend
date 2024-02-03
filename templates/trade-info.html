@@ -1,0 +1,109 @@
+
+{% extends 'base.html' %}
+
+
+{% block content %}
+  <div id="content-start" class="content" tabindex="-1">
+
+    <!-- Content -->
+    <div id="content" class="">
+      <h1>Выберите Трейдинг для изменения</h1>
+      <div id="content-main">
+        <div class="module" id="changelist">
+          <div class="changelist-form-container">
+            <form id="changelist-form" novalidate>
+              <input type="hidden">
+              <div class="actions">
+                <label>Действие:
+                  <select name="action" required>
+                    <option value="" selected>---------</option>
+                    <option value="delete_selected">Удалить выбранные Трейдинг</option>
+                  </select>
+                </label>
+                <input type="hidden" name="select_across" value="0" class="select-across">
+                <!-- <button type="submit" class="button" title="Выполнить выбранное действие" name="index" value="0">Выполнить</button> -->
+                <span class="action-counter" data-actions-icnt="100">Выбрано 0 объектов из 100 </span>
+                <span class="all hidden">Выбраны все 103</span>
+                <span class="question hidden"><a href="#" title="Нажмите здесь, чтобы выбрать объекты на всех страницах">Выбрать все Трейдинг (103)</a></span>
+                <span class="clear hidden"><a href="#">Снять выделение</a></span>
+              </div>
+              <div class="results">
+                <table id="result_list">
+                  <thead>
+                    <tr>
+                      <th scope="col" class="sortable column-symbol">
+                        <div class="text"><a>Символ</a></div>
+                        <div class="clear"></div>
+                      </th>
+                      <th scope="col" class="sortable column-buy_kaspa_quantity">
+                        <div class="text"><a>Куплено</a></div>
+                        <div class="clear"></div>
+                      </th>
+                      <th scope="col" class="sortable column-cummulative_quote_qty">
+                        <div class="text"><a>Потрачено</a></div>
+                        <div class="clear"></div>
+                      </th>
+                      <th scope="col" class="sortable column-buy_price">
+                        <div class="text"><a>Цена покупки</a></div>
+                        <div class="clear"></div>
+                      </th>
+                      <th scope="col" class="sortable column-sell_price">
+                        <div class="text"><a>Цена продажи</a></div>
+                        <div class="clear"></div>
+                      </th>
+                      <th scope="col" class="sortable column-profit">
+                        <div class="text"><a>Маржа</a></div>
+                        <div class="clear"></div>
+                      </th>
+                      <th scope="col" class="sortable column-status">
+                        <div class="text"><a>Статус</a></div>
+                        <div class="clear"></div>
+                      </th>
+                      <th scope="col" class="sortable column-user">
+                        <div class="text"><a>User</a></div>
+                        <div class="clear"></div>
+                      </th>
+                      <th scope="col" class="sortable column-date_time">
+                        <div class="text"><a>Date time</a></div>
+                        <div class="clear"></div>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for trade in trades %}
+                      <tr>
+                        <th class="field-symbol"><a href="/admin/trade-info/{{ trade.id }}">{{ trade.symbol }}</a></th>
+                        <td class="field-buy_quantity">{{ trade.buy_quantity }}</td>
+                        <td class="field-cummulative_quote_qty">{{ trade.cummulative_qoute_qty }}</td>
+                        <td class="field-buy_price">{{ trade.buy_price }}</td>
+                        <td class="field-sell_price">{{ trade.sell_price }}</td>
+                        {% if trade.profit == None %}
+                          <td class="field-profit"></td>
+                        {% else %}
+                          <td class="field-profit">{{ trade.profit }}</td>
+                        {% endif %}
+                          <td class="field-status">{{ trade.status }}</td>
+                        <td class="field-user nowrap">{{ trade.user }}</td>
+                        <td class="field-date_time nowrap">{{ trade.date_time }}</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+              <p class="paginator">
+                <a href="?offset={{ current_page * 100 - 100}}" class="end"><</a>
+                <span class="this-page">{{ current_page }}</span>
+                <a href="?offset={{ current_page * 100 }}" class="end">></a>
+                {{ pages }} Pages /
+                {{ count_trades }} Трейдинг
+              </p>
+            </form>
+          </div>
+        </div>
+      </div>
+      <br class="clear">
+    </div>
+    <!-- END Content -->
+    <div id="footer"></div>
+  </div>
+{% endblock %}

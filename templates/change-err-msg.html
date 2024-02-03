@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block links %}
+   <link rel="stylesheet" href="/static/admin/css/forms.css">
+{% endblock %}
+
+{% block content %}
+
+    <div id="content-start" class="content" tabindex="-1">
+
+      <!-- Content -->
+      <div id="content" class="colM">
+        <h1>Изменить Вебсокет инфо</h1>
+        <div id="content-main">
+          <form method="post" id="websocketinfomsg_form" novalidate>
+            <input type="hidden">
+            <div>
+              <fieldset class="module aligned ">
+                <div class="form-row field-info_msg">
+                  <div>
+                    <div class="flex-container">
+                      <label class="required" for="id_info_msg">Текст:</label>
+                      <textarea name="info_msg" cols="40" rows="10" class="vLargeTextField" required id="id_info_msg">{{ err_msg.error_msg }}</textarea>
+                    </div>
+                  </div>
+                </div>
+              </fieldset>
+              <div class="submit-row">
+                <input type="submit" value="Сохранить" class="default" name="_save">
+                <a href="#" class="deletelink">Удалить</a>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+      <!-- END Content -->
+    </div>
+
+{% endblock %}

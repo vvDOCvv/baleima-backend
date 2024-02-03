@@ -1,0 +1,63 @@
+.admin-monitor {
+  width: 100%;
+  height: 100vh;
+  padding: 30px;
+}
+
+.info-block {
+  width: 300px;
+  margin: 0 auto;
+}
+
+.thread-is-working {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: rgb(253, 248, 248);
+  font-weight: 600;
+  font-size: 20px;
+}
+
+.off-bg {
+  background-color: red;
+}
+
+.on-bg {
+  background-color: rgb(22, 209, 22);
+}
+
+.thread-is-working {
+  width: 100%;
+  height: 50px;
+  margin-bottom: 20px;
+  border-radius: 5px;
+}
+
+.active-thread-bts {
+  text-align: center;
+}
+
+.btn {
+  width: 49%;
+  border:  none;
+  border-radius: 3px;
+  height: 40px;
+  color: rgb(253, 248, 248);
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.btn-on:hover {
+  background-color: rgb(29, 158, 29);
+}
+
+.btn-off:hover {
+  background-color: rgb(159, 21, 21);
+}
+
+.disabled {
+  background-color: #acacac;
+  cursor: default;
+}
+

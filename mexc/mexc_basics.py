@@ -1,4 +1,5 @@
 import time
+import asyncio
 import aiohttp
 import hmac
 import hashlib
@@ -44,6 +45,7 @@ class MEXCBasics:
         }
         params["timestamp"] = timestamp
 
+
         async with aiohttp.ClientSession() as session:
             async with session.request(url=url, method=method, headers=headers, params=params) as response:
                 # response.raise_for_status()
@@ -53,6 +55,7 @@ class MEXCBasics:
     async def get_balance(self, symbol: str | None = None) -> list[dict] | dict | None:
         balances_cor = await self.account_info(method="GET", url_path="/account")
         balances = balances_cor.get('balances')
+
 
         if symbol:
             for balance in balances:

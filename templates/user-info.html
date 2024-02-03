@@ -1,0 +1,239 @@
+
+{% extends 'base.html' %}
+
+{% block links %}
+  <link rel="stylesheet" href="/static/admin/css/forms.css">
+{% endblock %}
+
+{% block content %}
+  <div id="content-start" class="content" tabindex="-1">
+    <!-- Content -->
+    <div id="content" class="colM">
+      <h1>Изменить пользователь</h1>
+      <h2>{{ user.username }}</h2>
+      <div id="content-main">
+        <form method="post" action="/admin/users/user/update" id="user_form" novalidate>
+          <input type="hidden" name="username" value="{{ user.username }}">
+          <div>
+            <fieldset class="module aligned ">
+              <div class="form-row field-first_name field-last_name">
+                <div class="flex-container form-multiline">
+                  <div>
+                    <div class="flex-container fieldBox field-first_name">
+                      <label for="id_first_name">Имя:</label>
+                      <input type="text" name="first_name" class="vTextField" value="{{ user.first_name }}" maxlength="150" id="id_first_name">
+                    </div>
+                  </div>
+                  <div>
+                    <div class="flex-container fieldBox field-last_name">
+                      <label class="inline" for="id_last_name">Фамилия:</label>
+                      <input type="text" name="last_name" class="vTextField" value="{{ user.last_name }}" maxlength="150" id="id_last_name">
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-row field-phone_number field-email">
+                <div class="flex-container form-multiline">
+                  <div>
+                    <div class="flex-container fieldBox field-phone_number">
+                      <label for="id_phone_number">Номер телефона:</label>
+                      <input type="text" name="phone_number" class="vTextField" value="{{ user.phone_number }}" maxlength="50" id="id_phone_number">
+                    </div>
+                  </div>
+                  <div>
+                    <div class="flex-container fieldBox field-email">
+                      <label class="inline" for="id_email">Адрес электронной почты:</label>
+                      <input type="email" name="email" class="vTextField" value="{{ user.email }}" maxlength="254" id="id_email">
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-row field-username">
+                <div>
+                  <div class="flex-container">
+                    <label>Имя пользователя:</label>
+                    <div class="readonly">{{ user.username }}</div>
+                  </div>
+                </div>
+              </div>
+              <div class="form-row field-ban field-for_free field-auto_trade">
+                <div class="flex-container form-multiline">
+                  <div>
+                    <div class="flex-container fieldBox field-ban">
+                      {% if user.ban %}
+                        <input type="checkbox" name="ban" id="id_ban" checked>
+                      {% else %}
+                        <input type="checkbox" name="ban" id="id_ban">
+                      {% endif %}
+                      <label class="vCheckboxLabel" for="id_ban">Ограничить доступ</label>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="flex-container fieldBox field-for_free">
+                      {% if user.for_free %}
+                        <input type="checkbox" name="for_free" id="id_for_free" checked>
+                      {% else %}
+                        <input type="checkbox" name="for_free" id="id_for_free">
+                      {% endif %}
+                      <label class="vCheckboxLabel inline" for="id_for_free">Бесплатная подписка</label>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="flex-container fieldBox field-auto_trade">
+                      {% if user.auto_trade %}
+                        <input type="checkbox" name="auto_trade" id="id_auto_trade" checked>
+                      {% else %}
+                        <input type="checkbox" name="auto_trade" id="id_auto_trade">
+                      {% endif %}
+                      <label class="vCheckboxLabel inline" for="id_auto_trade">Авто торговля</label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="form-row field-trade_usdt_quantity field-trade_percent">
+                <div class="flex-container form-multiline">
+                  <div>
+                    <div class="flex-container fieldBox field-trade_usdt_quantity">
+                      <label class="required" for="id_trade_usdt_quantity">USDT для торговли:</label>
+                      <input type="number" name="trade_quantity" value="{{ user.trade_quantity }}" class="vIntegerField" required id="id_trade_usdt_quantity">
+                    </div>
+                  </div>
+                  <div>
+                    <div class="flex-container fieldBox field-trade_percent">
+                      <label class="required inline" for="id_trade_percent">Процент торговли:</label>
+                      <input type="number" name="trade_percent" value="{{ user.trade_percent }}" step="any" required id="id_trade_percent">
+                    </div>
+                  </div>
+                  <div>
+                    <div class="flex-container fieldBox field-trade_percent">
+                      <label class="required inline" for="id_trade_percent">Валюта для торговли</label>
+                      <input type="text" name="symbol_to_trade" value="{{ user.symbol_to_trade }}" step="any" required id="id_trade_percent">
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="form-row field-is_staff">
+                <div>
+                  <div class="flex-container checkbox-row">
+                    {% if user.is_staff %}
+                      <input type="checkbox" name="is_staff" id="id_is_staff" checked>
+                    {% else %}
+                      <input type="checkbox" name="is_staff" id="id_is_staff">
+                    {% endif %}
+                    <label class="vCheckboxLabel" for="id_is_staff">Статус персонала</label>
+                  </div>
+                  <div class="help" id="id_is_staff_helptext">
+                    <div>Отметьте, если пользователь может входить в административную часть сайта.</div>
+                  </div>
+                </div>
+              </div>
+              <div class="form-row field-is_superuser">
+                <div>
+                  <div class="flex-container checkbox-row">
+                    {% if user.is_superuser %}
+                      <input type="checkbox" name="is_superuser" id="id_is_superuser" checked>
+                    {% else %}
+                      <input type="checkbox" name="is_superuser" id="id_is_superuser">
+                    {% endif %}
+
+                    <label class="vCheckboxLabel" for="id_is_superuser">Статус суперпользователя</label>
+                  </div>
+                  <div class="help" id="id_is_superuser_helptext">
+                    <div>Указывает, что пользователь имеет все права без явного их назначения.</div>
+                  </div>
+                </div>
+              </div>
+              <div class="form-row field-mexc_api_key">
+                <div>
+                  <div class="flex-container">
+                    <label for="id_mexc_api_key">MEXC api ключ:</label>
+                    <input type="text" name="mexc_api_key" value="{{ user.mexc_api_key }}" class="vTextField" maxlength="255" id="id_mexc_api_key">
+                  </div>
+                </div>
+              </div>
+              <div class="form-row field-mexc_secret_key">
+                <div>
+                  <div class="flex-container">
+                    <label for="id_mexc_secret_key">MEXC секретный ключ:</label>
+                      <input type="text" name="mexc_secret_key" value="{{ user.mexc_secret_key }}" class="vTextField" maxlength="255" id="id_mexc_secret_key">
+                  </div>
+                </div>
+              </div>
+              <div class="form-row field-last_paid">
+                <div>
+                  <div class="flex-container">
+                    <label for="id_last_paid">Последняя оплата:</label>
+                    <p class="date">
+                      {% if user.last_paid %}
+                        <input type="text" name="last_paid" class="vDateField" value="{{ user.last_paid.strftime('%d %B %Y г. %H:%M') }}" size="10" id="id_last_paid">
+                      {% else %}
+                        <input type="text" name="last_paid" class="vDateField"  size="10" id="id_last_paid">
+                      {% endif %}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div class="form-row field-date_joined">
+                <div>
+                  <div class="flex-container">
+                    <label>Дата регистрации:</label>
+                    <div class="readonly">{{ user.date_joined.strftime('%d %B %Y г. %H:%M') }}</div>
+                  </div>
+                </div>
+              </div>
+            </fieldset>
+
+            <div class="js-inline-admin-formset inline-group" id="tradeinfo_set-group" data-inline-type="tabular" data-inline-formset="{&quot;name&quot;: &quot;#tradeinfo_set&quot;, &quot;options&quot;: {&quot;prefix&quot;: &quot;tradeinfo_set&quot;, &quot;addText&quot;: &quot;\u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c \u0435\u0449\u0435 \u043e\u0434\u0438\u043d \u0422\u0440\u0435\u0439\u0434\u0438\u043d\u0433&quot;, &quot;deleteText&quot;: &quot;\u0423\u0434\u0430\u043b\u0438\u0442\u044c&quot;}}">
+              <div class="tabular inline-related last-related">
+                <fieldset class="module ">
+                  <h2>Трейдинг</h2>
+
+                  <table>
+                    <thead>
+                      <tr>
+                        <th class="original"></th>
+                        <th class="column-symbol">Символ</th>
+                        <th class="column-buy_kaspa_quantity">Куплено</th>
+                        <th class="column-cummulative_quote_qty">Потрачено</th>
+                        <th class="column-buy_price">Цена покупки</th>
+                        <th class="column-sell_price">Цена продажи</th>
+                        <th class="column-profit">Маржа</th>
+                        <th class="column-status">Статус</th>
+                        <th class="column-date_time">Date time</th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {% for trade in trades %}
+                        <tr class="form-row has_original" id="tradeinfo_set-0">
+                          <td class="original"></td>
+                          <td class="field-symbol"><p>{{ trade.symbol }}</p></td>
+                          <td class="field-buy_kaspa_quantity"><p>{{ trade.buy_quantity }}</p></td>
+                          <td class="field-cummulative_quote_qty"><p>{{ trade.cummulative_qoute_qty }}</p></td>
+                          <td class="field-buy_price"><p>{{ trade.buy_price }}</p></td>
+                          <td class="field-sell_price"><p>{{ trade.sell_price }}</p></td>
+                          <td class="field-profit"><p>{{ trade.profit }}</p></td>
+                          <td class="field-status"><p>{{ trade.status }}</p></td>
+                          <td class="field-date_time"><p>{{ trade.date_time.strftime('%d %B %Y г. %H:%M') }}</p></td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+
+                </fieldset>
+
+              </div>
+            </div>
+            <div class="submit-row">
+              <input type="submit" value="Сохранить" class="default" name="_save">
+              <!-- <a href="/admin/users/user/delete/{{ user.username}}" class="deletelink">Удалить</a> -->
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+    <!-- END Content -->
+  </div>
+{% endblock %}
