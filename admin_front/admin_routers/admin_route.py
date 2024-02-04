@@ -43,16 +43,16 @@ async def admin_panel(request: Request, is_superuser: super_user_dependency, db:
     return templates.TemplateResponse('admin.html', {"request": request, "admin": is_superuser, "is_active": is_active})
 
 
-@router.post("/thread-on-of", response_class=HTMLResponse)
-async def on_off_thread(request: Request, is_superuser: super_user_dependency, db: db_dependency, is_active: bool = Form(...)):
+@router.post("/thread-on-off", response_class=HTMLResponse)
+async def on_off_thread(request: Request, is_superuser: super_user_dependency, db: db_dependency, on_off: bool = Form(...)):
     if not is_superuser:
         return RedirectResponse(url="/admin/login", status_code=status.HTTP_302_FOUND)
 
-    if is_active:
+    if on_off:
         th = threading.Thread(target=check_mexc_run, name='check-mexc')
         th.start()
 
-    stmt = update(ThreadIsActive).where(ThreadIsActive.id == 1).values(is_active=is_active)
+    stmt = update(ThreadIsActive).where(ThreadIsActive.id == 1).values(is_active=on_off, on_off=on_off)
     await db.execute(stmt)
     await db.commit()
 
@@ -81,10 +81,13 @@ async def trade_info(
     if offset >= 100:
         current_page = math.floor(offset / 100)
 
-
+    stmt_total_profit = select(func.sum(TradeInfo.profit)).where(TradeInfo.status == "FILLED")
     stmt = select(TradeInfo).limit(limit).offset(offset).order_by(TradeInfo.date_time.desc())
     trades_db: Result = await db.execute(stmt)
+    res_total_profit: Result = await db.execute(stmt_total_profit)
+
     trades = trades_db.scalars().all()
+    total_profit = res_total_profit.scalar()
 
     context = {
         "request": request,
@@ -92,7 +95,8 @@ async def trade_info(
         "admin": is_superuser,
         "count_trades": count_trades,
         "pages": pages,
-        "current_page": current_page
+        "current_page": current_page,
+        "total_profit": total_profit
     }
 
     return templates.TemplateResponse('trade-info.html', context=context)

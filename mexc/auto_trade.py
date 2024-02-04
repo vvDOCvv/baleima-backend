@@ -1,6 +1,6 @@
 from sqlalchemy import select, update, insert
 from sqlalchemy.engine import Result
-from sqlalchemy.ext.asyncio import AsyncSession
+from database.base import async_session
 from .mexc_basics import MEXCBasics
 from database.models import User, TradeInfo, ErrorInfoMsgs
 
@@ -11,19 +11,15 @@ class AutoTrade(MEXCBasics):
         self,
         mexc_key: str,
         mexc_secret: str,
-        symbol: str,
         user: User,
-        db: AsyncSession
     ):
         super().__init__(mexc_key, mexc_secret)
-        self.symbol = symbol
         self.user = user
-        self.db = db
 
 
     async def auto_trade_buy(self):
         trade_qty = self.user.trade_quantity
-        buy_info = await self.buy(trade_qty, self.symbol)
+        buy_info = await self.buy(trade_qty, self.user.symbol_to_trade)
 
         if 'code' in buy_info:
             raise Exception(f"Not balance or balance < 6. {self.user.username}: {buy_info}")
@@ -31,13 +27,13 @@ class AutoTrade(MEXCBasics):
         if 'orderId' not in buy_info:
             raise Exception(f"Can not buy: {buy_info}")
 
-        order_info = await self.get_order_info(order_id=buy_info["orderId"], symbol=self.symbol)
+        order_info = await self.get_order_info(order_id=buy_info["orderId"], symbol=self.user.symbol_to_trade)
         buy_price = round(
             float(order_info["cummulativeQuoteQty"]) / float(order_info["origQty"]), 6
         )
 
         buy_data = {
-            "symbol": self.symbol,
+            "symbol": self.user.symbol_to_trade,
             "buy_quantity": order_info["origQty"],
             "cummulative_qoute_qty": float(order_info["cummulativeQuoteQty"]),
             "buy_order_id": order_info["orderId"],
@@ -46,17 +42,18 @@ class AutoTrade(MEXCBasics):
         }
 
         stmt = insert(TradeInfo).values(**buy_data)
-        await self.db.execute(stmt)
-        await self.db.commit()
+        async with async_session() as db:
+            await db.execute(stmt)
+            await db.commit()
 
         return order_info["orderId"]
 
 
     async def auto_trade_sell(self, buy_order_id: str):
         stmt = select(TradeInfo).where(TradeInfo.buy_order_id == buy_order_id)
-        trade_db: Result = await self.db.execute(stmt)
-        trade_info: TradeInfo = trade_db.scalars().one()
-
+        async with async_session() as db:
+            trade_db: Result = await db.execute(stmt)
+            trade_info: TradeInfo = trade_db.scalar()
 
         if (
             not trade_info.buy_price
@@ -66,41 +63,47 @@ class AutoTrade(MEXCBasics):
         ):
             await self.correct_order(trade_info=trade_info)
 
-        sell_price = await self.calculate_sell_price(buy_price=trade_info.buy_price)
+        sell_price = self.calculate_sell_price(buy_price=trade_info.buy_price)
 
         sell_info = await self.sell(
-            symbol=self.symbol,
+            symbol=self.user.symbol_to_trade,
             sell_price=sell_price,
             executed_qty=trade_info.buy_quantity,
+        )
+
+        profit = self.calculate_profit(
+            buy_price=trade_info.buy_price,
+            sell_price=sell_info["price"],
+            orig_qty=trade_info.buy_quantity,
         )
 
         data = {
             "sell_order_id": sell_info["orderId"],
             "sell_price": sell_price,
+            "profit": profit,
             "status": "NEW"
         }
 
         stmt = update(TradeInfo).where(TradeInfo.buy_order_id == buy_order_id).values(**data)
-        await self.db.execute(stmt)
-        await self.db.commit()
+        async with async_session() as db:
+            await db.execute(stmt)
+            await db.commit()
 
         return sell_info["orderId"]
 
 
-    async def calculate_sell_price(self, buy_price: float) -> float:
+    def calculate_sell_price(self, buy_price: float) -> float:
         percent = self.user.trade_percent
         return round(buy_price * (1 + (percent / 100)), 6)
 
 
-    def calculate_profit(
-        self, buy_price: float, sell_price: str, orig_qty: float
-    ) -> float:
+    def calculate_profit(self, buy_price: float, sell_price: str, orig_qty: float) -> float:
         return round(orig_qty * (float(sell_price) - buy_price), 6)
 
 
     async def correct_order(self, trade_info: TradeInfo):
         buy_order_info = await self.get_order_info(
-            symbol=self.symbol, order_id=trade_info.buy_order_id
+            symbol=self.user.symbol_to_trade, order_id=trade_info.buy_order_id
         )
 
         cummulative_qoute_qty = float(buy_order_info["cummulativeQuoteQty"])
@@ -115,13 +118,14 @@ class AutoTrade(MEXCBasics):
         }
 
         stmt = update(TradeInfo).where(TradeInfo.buy_order_id == trade_info.buy_order_id).values(**data)
-        await self.db.execute(stmt)
-        await self.db.commit()
+        async with async_session() as db:
+            await db.execute(stmt)
+            await db.commit()
 
 
     async def correct_sell_order(self, trade_info: TradeInfo):
         sell_order_info = await self.get_order_info(
-            symbol=self.symbol, order_id=trade_info.sell_order_id
+            symbol=self.user.symbol_to_trade, order_id=trade_info.sell_order_id
         )
 
         data = {
@@ -130,14 +134,16 @@ class AutoTrade(MEXCBasics):
         }
 
         stmt = update(TradeInfo).where(TradeInfo.sell_order_id == trade_info.sell_order_id).values(**data)
-        await self.db.execute(stmt)
-        await self.db.commit()
+        async with async_session() as db:
+            await db.execute(stmt)
+            await db.commit()
 
 
     async def check_db(self):
         stmt = select(TradeInfo).where(TradeInfo.user == self.user.id)
-        trade_obj: Result = await self.db.execute(stmt)
-        user_trades_info = trade_obj.scalars().all()
+        async with async_session() as db:
+            trade_obj: Result = await db.execute(stmt)
+            user_trades_info = trade_obj.scalars().all()
 
         if not user_trades_info:
             return
@@ -164,7 +170,7 @@ class AutoTrade(MEXCBasics):
 
             if trade_info.status == 'NEW':
                 sell_order_info = await self.get_order_info(
-                    symbol=self.symbol, order_id=trade_info.sell_order_id
+                    symbol=self.user.symbol_to_trade, order_id=trade_info.sell_order_id
                 )
 
                 if "status" not in sell_order_info:
@@ -184,8 +190,9 @@ class AutoTrade(MEXCBasics):
                         }
 
                         stmt = update(TradeInfo).where(TradeInfo.sell_order_id == sell_order_info['orderId']).values(**filled_data)
-                        await self.db.execute(stmt)
-                        await self.db.commit()
+                        async with async_session() as db:
+                            await db.execute(stmt)
+                            await db.commit()
 
                     case "CANCELED":
                         canceled_data = {
@@ -194,8 +201,10 @@ class AutoTrade(MEXCBasics):
                         }
 
                         stmt = update(TradeInfo).where(TradeInfo.sell_order_id == sell_order_info['orderId']).values(**canceled_data)
-                        await self.db.execute(stmt)
-                        await self.db.commit()
+                        async with async_session() as db:
+                            await db.execute(stmt)
+                            await db.commit()
+
 
     async def auto_trade(self):
         try:
@@ -211,5 +220,6 @@ class AutoTrade(MEXCBasics):
 
         except Exception as ex:
             stmt = insert(ErrorInfoMsgs).values(error_msg=str(ex))
-            await self.db.execute(stmt)
-            await self.db.commit()
+            async with async_session() as db:
+                await db.execute(stmt)
+                await db.commit()

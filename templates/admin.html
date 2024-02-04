@@ -15,13 +15,13 @@
         <div class="thread-is-working off-bg">Отключен</div>
       {% endif %}
 
-      <form method="POST" action="/admin/thread-on-of" class="active-thread-bts" enctype="application/x-www-form-urlencoded">
+      <form method="POST" action="/admin/thread-on-off" class="active-thread-bts" enctype="application/x-www-form-urlencoded">
         {% if is_active.is_active %}
-          <input type="hidden" name="is_active" value="False">
+          <input type="hidden" name="on_off" value="False">
           <button class="btn on-bg disabled" disabled>Активировать</button>
           <button class="btn btn-off off-bg">Отключить</button>
         {% else %}
-          <input type="hidden" name="is_active" value="True">
+          <input type="hidden" name="on_off" value="True">
           <button class="btn btn-on on-bg">Активировать</button>
           <button class="btn off-bg disabled" disabled>Отключить</button>
         {% endif %}

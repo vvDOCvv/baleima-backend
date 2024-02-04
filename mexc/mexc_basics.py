@@ -101,14 +101,17 @@ class MEXCBasics:
         response = await self.account_info(method="POST", url_path="/order", params=params)
         return response
 
+
     async def get_order_info(self, order_id: str, symbol: str) -> dict:
         params = {"symbol": symbol, "orderId": order_id, "recvWindow": 15000}
         response = await self.account_info(url_path=f"/order", params=params)
         return response
 
+
     async def get_current_open_orders(self, symbol: str) -> dict:
         response = await self.account_info(url_path="/openOrders", params={"symbol": symbol})
         return response
+
 
     async def get_all_orders(self, symbol: str) -> dict:
         response = await self.account_info(url_path="/allOrders", params={"symbol": symbol})
