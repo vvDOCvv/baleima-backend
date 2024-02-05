@@ -1,16 +1,12 @@
 import asyncio
-from sqlalchemy import select, update, insert, text
+from sqlalchemy import select, update, insert
 from sqlalchemy.engine import Result
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.exc import NoResultFound
-from mexc.mexc_basics import MEXCBasics
 from .auto_trade import AutoTrade
 from database.base import async_session
 from database.models import User, TradeInfo, ThreadIsActive, ErrorInfoMsgs
 from urllib.parse import urlencode, quote
 import hmac, hashlib
 from time import time
-import aiohttp
 from aiohttp import ClientSession
 
 
@@ -31,7 +27,7 @@ class MakeRequest:
         for new_trade in new_trades:
             timestamp = int(time() * 1000)
             params = {"symbol": new_trade.symbol, "orderId": new_trade.sell_order_id, "recvWindow": 20000}
-            signature = self.make_signature(new_trade, params, timestamp)
+            signature = self.make_signature(new_trade.mexc_secret_key, params, timestamp)
 
             params.update({
                 "signature": signature,
@@ -42,12 +38,18 @@ class MakeRequest:
         return parametrs
 
 
-    def make_signature(self, trade_db: str, params: dict, timestamp: int) -> str:
-        encoded_params = urlencode(params, quote_via=quote)
-        msg_for_hmac = f"{encoded_params}&timestamp={timestamp}"
-        mexc_secret = trade_db.mexc_secret_key.encode("utf-8")
-        msg_for_hmac = msg_for_hmac.encode("utf-8")
-        return hmac.new(mexc_secret, msg_for_hmac, hashlib.sha256).hexdigest()
+    @staticmethod
+    def make_signature(secret_key: str, timestamp: int, params: dict = None) -> str:
+        if params:
+            encoded_params = urlencode(params, quote_via=quote)
+            msg = f"{encoded_params}&timestamp={timestamp}"
+        else:
+            msg = f"timestamp={timestamp}"
+
+        secret_key = secret_key.encode("utf-8")
+        msg = msg.encode("utf-8")
+
+        return hmac.new(key=secret_key, msg=msg, digestmod=hashlib.sha256).hexdigest()
 
 
     async def create_task(self, session: ClientSession, headers: dict, parametr: dict):
@@ -127,23 +129,6 @@ class CheckDB(MakeRequest):
         if user.auto_trade:
             trade = AutoTrade(mexc_key=user.mexc_api_key, mexc_secret=user.mexc_secret_key, user=user)
             await trade.auto_trade()
-
-
-async def set_params(user_id: int):
-    async with async_session() as db:
-        stmt = select(User).filter(User.id == user_id)
-        user_db: Result = await db.execute(stmt)
-        try:
-            user: User = user_db.scalars().first()
-        except:
-            return
-
-    trade = AutoTrade(
-        mexc_key=user.mexc_api_key,
-        mexc_secret=user.mexc_secret_key,
-        user=user,
-    )
-    await trade.auto_trade()
 
 
 async def check_mexc():

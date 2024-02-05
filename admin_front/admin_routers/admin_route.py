@@ -6,7 +6,7 @@ from starlette.responses import RedirectResponse
 from fastapi import APIRouter, HTTPException, Depends, Request, status, Query, Path, Form
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
-from sqlalchemy import select, update, delete, func
+from sqlalchemy import select, update, delete, func, desc
 from sqlalchemy.engine import Result
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -82,12 +82,12 @@ async def trade_info(
         current_page = math.floor(offset / 100)
 
     stmt_total_profit = select(func.sum(TradeInfo.profit)).where(TradeInfo.status == "FILLED")
-    stmt = select(TradeInfo).limit(limit).offset(offset).order_by(TradeInfo.date_time.desc())
+    stmt = select(TradeInfo).limit(limit).offset(offset).order_by(TradeInfo.id.desc())
     trades_db: Result = await db.execute(stmt)
     res_total_profit: Result = await db.execute(stmt_total_profit)
 
     trades = trades_db.scalars().all()
-    total_profit = res_total_profit.scalar()
+    total_profit = round(res_total_profit.scalar(), 6)
 
     context = {
         "request": request,
@@ -157,16 +157,27 @@ async def user_info(request: Request, is_superuser: super_user_dependency, db: d
     stmt_user = select(User).where(User.id == user_id)
     user_db: Result = await db.execute(stmt_user)
     try:
-        user: User = user_db.scalars().one()
+        user: User = user_db.scalar()
     except:
         return RedirectResponse(url="/admin/users", status_code=status.HTTP_302_FOUND)
 
-    stmt_tarde = select(TradeInfo).where(TradeInfo.user == user_id)
+    stmt_tarde = select(TradeInfo).where(TradeInfo.user == user_id).order_by(desc(TradeInfo.id)).limit(100)
     trades_db: Result = await db.execute(stmt_tarde)
     trades: TradeInfo = trades_db.scalars().all()
 
+    stmt_profit = select(func.sum(TradeInfo.profit)).where(TradeInfo.user == user_id, TradeInfo.status == "FILLED")
+    res_profit: Result = await db.execute(stmt_profit)
+    total_profit = round(res_profit.scalar(), 6)
 
-    return templates.TemplateResponse("user-info.html", {"request": request, "admin": is_superuser, "user": user, "trades": trades})
+    context = {
+        "request": request,
+        "admin": is_superuser,
+        "user": user,
+        "trades": trades,
+        "total_profit": total_profit
+    }
+
+    return templates.TemplateResponse("user-info.html", context=context)
 
 
 @router.post("/users/user/update", status_code=status.HTTP_204_NO_CONTENT)

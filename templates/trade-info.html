@@ -14,19 +14,6 @@
             <form id="changelist-form" novalidate>
               <input type="hidden">
               <div class="actions">
-                <label>Действие:
-                  <select name="action" required>
-                    <option value="" selected>---------</option>
-                    <option value="delete_selected">Удалить выбранные Трейдинг</option>
-                  </select>
-                </label>
-                <input type="hidden" name="select_across" value="0" class="select-across">
-                <!-- <button type="submit" class="button" title="Выполнить выбранное действие" name="index" value="0">Выполнить</button> -->
-                <span class="action-counter" data-actions-icnt="100">Выбрано 0 объектов из 100 </span>
-                <span class="all hidden">Выбраны все 103</span>
-                <span class="question hidden"><a href="#" title="Нажмите здесь, чтобы выбрать объекты на всех страницах">Выбрать все Трейдинг (103)</a></span>
-                <span class="clear hidden"><a href="#">Снять выделение</a></span>
-                <span>|</span>
                 <span>Total profit</span>
                 <span>--</span>
                 <span><strong>{{ total_profit }}</strong></span>

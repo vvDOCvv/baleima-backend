@@ -1,12 +1,11 @@
 from typing import Annotated
 from fastapi import APIRouter, Depends
-from sqlalchemy import select, func, update
+from sqlalchemy import select, func
 from sqlalchemy.engine import Result
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 from database.base import get_db
-from database.models import TradeInfo, User, ThreadIsActive
-from mexc.trade_services import CheckDB
+from database.models import TradeInfo
 
 
 router = APIRouter()
@@ -19,8 +18,10 @@ async def get_basic_info(db: Annotated[AsyncSession, Depends(get_db)]):
     res_total_profit: Result = await db.execute(stmt)
 
     try:
-        total_profit = res_total_profit.scalar()
+        total_profit = round(res_total_profit.scalar(), 6)
     except NoResultFound:
         total_profit = None
 
     return { "total_profit": total_profit }
+
+

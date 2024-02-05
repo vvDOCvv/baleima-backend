@@ -1,5 +1,4 @@
 from starlette import status
-from fastapi import APIRouter
 from typing import Annotated
 from starlette import status
 from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends
@@ -11,7 +10,7 @@ from database.base import get_db
 from mexc.mexc_basics import MEXCBasics
 from database.models import User, TradeInfo
 from utils.services import get_current_user, has_api_keys
-from mexc.trade_services import set_params
+from mexc.auto_trade import AutoTrade
 
 
 router = APIRouter(
@@ -31,7 +30,7 @@ async def get_user(user: user_dependency, db: db_dependency):
     userdb: Result = await db.execute(stmt)
 
     try:
-        user_db: User | None = userdb.scalars().first()
+        user_db: User | None = userdb.scalar()
     except:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Пользователь не сущестувет.")
 
@@ -79,15 +78,15 @@ async def update_user_settings(user_request: UserUpdaeSettings, user: user_depen
 
 @router.get("/get-all-trades", status_code=status.HTTP_200_OK)
 async def trades(user: user_dependency, db: db_dependency):
-    stmt = select(TradeInfo).where(TradeInfo.user == user.get("id"))
+    stmt = select(TradeInfo).where(TradeInfo.user == user.get("id")).limit(10).offset(0)
     res_trades: Result = await db.execute(stmt)
 
-    stmt_profit = select(func.sum(TradeInfo.profit)).where(TradeInfo.user == user.get("id"))
+    stmt_profit = select(func.sum(TradeInfo.profit)).where(TradeInfo.user == user.get("id"), TradeInfo.status == "FILLED")
     res_profit: Result = await db.execute(stmt_profit)
 
     try:
         trades = res_trades.scalars().all()
-        total_profit = res_profit.scalars().one()
+        total_profit = round(res_profit.scalar(), 6)
     except:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail='Ошибка при извлечени с БД')
 
@@ -108,7 +107,12 @@ async def start_auto_trade(auto_trade: bool, user: Annotated[User, Depends(has_a
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Ошибка на сервере повторите еще раз")
 
     if auto_trade:
-        background_tasks.add_task(set_params, user.id)
+        trade = AutoTrade(
+            mexc_key=user.mexc_api_key,
+            mexc_secret=user.mexc_secret_key,
+            user=user,
+        )
+        background_tasks.add_task(trade.auto_trade)
 
 
 @router.get("/balance", status_code=status.HTTP_200_OK)

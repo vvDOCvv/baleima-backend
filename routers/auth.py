@@ -23,7 +23,7 @@ user_dependency = Annotated[dict, Depends(get_current_user)]
 async def create_user(user_request: UserRequest, db: AsyncSession = Depends(get_db)):
     stmt = select(User).filter(User.username == user_request.username)
     user: Result = await db.execute(stmt)
-    user_exsists: str | None =  user.scalars().first() is not None
+    user_exsists: str | None =  user.scalar() is not None
 
     if user_exsists:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Такой пользователь уже сущестувет.")
