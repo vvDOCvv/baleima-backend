@@ -167,14 +167,17 @@ async def user_info(request: Request, is_superuser: super_user_dependency, db: d
 
     stmt_profit = select(func.sum(TradeInfo.profit)).where(TradeInfo.user == user_id, TradeInfo.status == "FILLED")
     res_profit: Result = await db.execute(stmt_profit)
-    total_profit = round(res_profit.scalar(), 6)
+    total_profit = res_profit.scalar()
+
+    if not total_profit:
+        total_profit = 0
 
     context = {
         "request": request,
         "admin": is_superuser,
         "user": user,
         "trades": trades,
-        "total_profit": total_profit
+        "total_profit": round(total_profit, 6)
     }
 
     return templates.TemplateResponse("user-info.html", context=context)
