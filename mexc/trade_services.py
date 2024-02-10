@@ -27,7 +27,7 @@ class MakeRequest:
         for new_trade in new_trades:
             timestamp = int(time() * 1000)
             params = {"symbol": new_trade.symbol, "orderId": new_trade.sell_order_id, "recvWindow": 20000}
-            signature = self.make_signature(new_trade.mexc_secret_key, params, timestamp)
+            signature = self.make_signature(secret_key=new_trade.mexc_secret_key, timestamp=timestamp, params=params)
 
             params.update({
                 "signature": signature,
@@ -78,6 +78,7 @@ class MakeRequest:
         return res
 
 
+class CheckDB(MakeRequest):
     async def make_request(self):
         new_trades: list = await self.get_new_trades_from_db()
 
@@ -88,7 +89,6 @@ class MakeRequest:
             return await self.gather_tasks(parametrs=params)
 
 
-class CheckDB(MakeRequest):
     async def chek_new_trades_and_update_db(self):
         resposes = await self.make_request()
 
@@ -130,38 +130,6 @@ class CheckDB(MakeRequest):
             trade = AutoTrade(mexc_key=user.mexc_api_key, mexc_secret=user.mexc_secret_key, user=user)
             await trade.auto_trade()
 
-
-async def check_mexc():
-    try:
-        stmt_is_active = select(ThreadIsActive.on_off).where(ThreadIsActive.id==1)
-        async with async_session() as db:
-            is_active: Result = await db.execute(stmt_is_active)
-        is_on = is_active.scalar()
-
-
-        auto_trade = CheckDB()
-
-        while is_on:
-            await auto_trade.chek_new_trades_and_update_db()
-            await asyncio.sleep(20)
-
-            stmt_is_active = select(ThreadIsActive.on_off).where(ThreadIsActive.id==1)
-            async with async_session() as db:
-                is_active: Result = await db.execute(stmt_is_active)
-            is_on = is_active.scalar()
-
-
-    except Exception as ex:
-        stmt_off = update(ThreadIsActive).where(ThreadIsActive.id == 1).values(is_active=False)
-        err_stmt = insert(ErrorInfoMsgs).values(error_msg=str(ex))
-        async with async_session() as db:
-            await db.execute(err_stmt)
-            await db.execute(stmt_off)
-            await db.commit()
-
-
-def check_mexc_run():
-    asyncio.run(check_mexc())
 
 
 

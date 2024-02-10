@@ -1,21 +1,18 @@
-from typing import Annotated
 import math
-import threading
+from typing import Annotated
 from starlette import status
 from starlette.responses import RedirectResponse
-from fastapi import APIRouter, HTTPException, Depends, Request, status, Query, Path, Form
+from fastapi import APIRouter, Depends, Request, status, Query, Path, Form
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import select, update, delete, func, desc
 from sqlalchemy.engine import Result
-from sqlalchemy.exc import NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 from database.base import get_db
 from database.models import User, ThreadIsActive, TradeInfo, ErrorInfoMsgs
 from ..admin_services import is_superuser_cooke
 from . import auth
 from utils.schemas import AdminUpdateUser
-from mexc.trade_services import check_mexc_run
 
 
 router = APIRouter(
@@ -24,7 +21,6 @@ router = APIRouter(
 )
 
 router.include_router(auth.router)
-
 
 templates = Jinja2Templates(directory="templates")
 db_dependency = Annotated[AsyncSession, Depends(get_db)]
@@ -36,28 +32,7 @@ async def admin_panel(request: Request, is_superuser: super_user_dependency, db:
     if not is_superuser:
         return RedirectResponse(url="/admin/login", status_code=status.HTTP_302_FOUND)
 
-    stmt = select(ThreadIsActive)
-    is_active_db: Result = await db.execute(stmt)
-    is_active: ThreadIsActive = is_active_db.scalars().one()
-
-    return templates.TemplateResponse('admin.html', {"request": request, "admin": is_superuser, "is_active": is_active})
-
-
-@router.post("/thread-on-off", response_class=HTMLResponse)
-async def on_off_thread(request: Request, is_superuser: super_user_dependency, db: db_dependency, on_off: bool = Form(...)):
-    if not is_superuser:
-        return RedirectResponse(url="/admin/login", status_code=status.HTTP_302_FOUND)
-
-    if on_off:
-        th = threading.Thread(target=check_mexc_run, name='check-mexc')
-        th.start()
-
-    stmt = update(ThreadIsActive).where(ThreadIsActive.id == 1).values(is_active=on_off, on_off=on_off)
-    await db.execute(stmt)
-    await db.commit()
-
-
-    return RedirectResponse(url="/admin", status_code=status.HTTP_302_FOUND)
+    return templates.TemplateResponse('admin.html', {"request": request, "admin": is_superuser})
 
 
 @router.get("/trade-info", response_class=HTMLResponse)

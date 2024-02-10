@@ -7,22 +7,22 @@ from database.models import Base
 from database.base import engine
 
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield
-app = FastAPI(lifespan=lifespan)
 
-
+application = FastAPI(lifespan=lifespan)
 
 # app = FastAPI()
-app.mount("/static", StaticFiles(directory="static"), name="static")
+application.mount("/static", StaticFiles(directory="static"), name="static")
 
 
-app.include_router(basic.router)
-app.include_router(auth.router)
-app.include_router(user.router)
-app.include_router(admin_route.router)
+application.include_router(basic.router)
+application.include_router(auth.router)
+application.include_router(user.router)
+application.include_router(admin_route.router)
 
 

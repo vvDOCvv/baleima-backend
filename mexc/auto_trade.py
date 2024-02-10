@@ -210,6 +210,9 @@ class AutoTrade(MEXCBasics):
         try:
             await self.check_db()
 
+            async with async_session() as db:
+                stmt = select(TradeInfo.status).where(TradeInfo.user == self.user.id).order_by(TradeInfo.id.desc)
+
             auto_trade = self.user.auto_trade
 
             if auto_trade:
