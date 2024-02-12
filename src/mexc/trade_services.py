@@ -14,7 +14,7 @@ class MakeRequest:
     async def get_new_trades_from_db(self):
         async with async_session() as db:
             stmt = (
-                select(User.mexc_api_key, User.mexc_secret_key, TradeInfo.sell_order_id, TradeInfo.symbol)
+                select(User.id, User.mexc_api_key, User.mexc_secret_key, TradeInfo.sell_order_id, TradeInfo.symbol)
                 .join(User)
                 .filter(TradeInfo.status == "NEW")
             )

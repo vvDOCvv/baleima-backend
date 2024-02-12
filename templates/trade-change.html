@@ -28,7 +28,7 @@
                 <div>
                   <div class="flex-container">
                     <label for="id_buy_kaspa_quantity">Куплено:</label>
-                    <input type="number" name="buy_kaspa_quantity" value="{{ trade.buy_quantity}}" step="any" id="id_buy_kaspa_quantity">
+                    <input type="number" name="buy_kaspa_quantity" value="{{ trade.buy_quantity }}" step="any" id="id_buy_kaspa_quantity">
                   </div>
                 </div>
               </div>
@@ -36,7 +36,7 @@
                 <div>
                   <div class="flex-container">
                     <label for="id_cummulative_quote_qty">Потрачено:</label>
-                    <input type="number" name="cummulative_quote_qty" value="{{ trade.cummulative_qoute_qty}}" step="any" id="id_cummulative_quote_qty">
+                    <input type="number" name="cummulative_quote_qty" value="{{ trade.cummulative_qoute_qty }}" step="any" id="id_cummulative_quote_qty">
                   </div>
                 </div>
               </div>
@@ -44,7 +44,7 @@
                 <div>
                   <div class="flex-container">
                     <label for="id_buy_order_id">ID покупки:</label>
-                    <input type="text" name="buy_order_id" value="{{ trade.buy_order_id}}" class="vTextField" maxlength="100" id="id_buy_order_id">
+                    <input type="text" name="buy_order_id" value="{{ trade.buy_order_id }}" class="vTextField" maxlength="100" id="id_buy_order_id">
                   </div>
                 </div>
               </div>
@@ -52,7 +52,7 @@
                 <div>
                   <div class="flex-container">
                     <label for="id_buy_price">Цена покупки:</label>
-                    <input type="number" name="buy_price" value="{{ trade.buy_price}}" step="any" id="id_buy_price">
+                    <input type="number" name="buy_price" value="{{ trade.buy_price }}" step="any" id="id_buy_price">
                   </div>
                 </div>
               </div>
@@ -76,7 +76,7 @@
                 <div>
                   <div class="flex-container">
                     <label for="id_profit">Маржа:</label>
-                    <input type="number" name="profit" value="{{ trade.profit}}"  step="any" id="id_profit">
+                    <input type="number" name="profit" value="{{ trade.profit }}"  step="any" id="id_profit">
                   </div>
                 </div>
               </div>
@@ -84,7 +84,7 @@
                 <div>
                   <div class="flex-container">
                     <label for="id_status">Статус:</label>
-                    <input type="text" name="status" value="{{ trade.status}}" class="vTextField" maxlength="30" id="id_status">
+                    <input type="text" name="status" value="{{ trade.status }}" class="vTextField" maxlength="30" id="id_status">
                   </div>
                 </div>
               </div>
@@ -92,14 +92,14 @@
                 <div>
                   <div class="flex-container">
                     <label>Date time:</label>
-                    <div class="readonly">{{ trade.date_time}}</div>
+                    <div class="readonly">{{ trade.date_time }}</div>
                   </div>
                 </div>
               </div>
             </fieldset>
             <div class="submit-row">
               <input type="submit" value="Сохранить" class="default" name="_save">
-              <a href="#" class="deletelink">Удалить</a>
+              <a href="/admin/trade-info/delete/{{ trade.id }}" class="deletelink">Удалить</a>
             </div>
           </div>
         </form>

@@ -150,9 +150,13 @@ class AutoTrade(MEXCBasics):
 
         if not user_trades_info:
             return
+        
 
         for trade_info in user_trades_info:
             trade_info: TradeInfo
+
+            if not trade_info.buy_order_id:
+                continue
 
             if (
                 not trade_info.buy_price
@@ -162,14 +166,14 @@ class AutoTrade(MEXCBasics):
             ):
                 await self.correct_order(trade_info=trade_info)
 
+            if trade_info.status == "CANCELED" or not trade_info.sell_order_id:
+                continue
+
             if (
                 not trade_info.sell_price
                 or trade_info.sell_price == 0.0
             ):
                 await self.correct_sell_order(trade_info=trade_info)
-
-            if trade_info.status == "CANCELED" or not trade_info.sell_order_id:
-                continue
 
             if trade_info.status == 'NEW':
                 sell_order_info = await self.get_order_info(

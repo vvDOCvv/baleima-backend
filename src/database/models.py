@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Integer,String, Boolean, DateTime, Float, ForeignKey, Text
+from sqlalchemy import Integer,String, Boolean, DateTime, Float, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, declared_attr
 from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import DeclarativeBase, relationship
@@ -36,8 +36,8 @@ class User(Base):
     for_free: Mapped[bool] = mapped_column(Boolean, default=False)
     last_paid: Mapped[datetime] = mapped_column(Boolean, nullable=True)
     ban: Mapped[bool] = mapped_column(Boolean, default=False)
-    last_login: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow())
-    date_joined: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow())
+    last_login: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    date_joined: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     trade: Mapped[list['TradeInfo']] = relationship()
 
@@ -54,7 +54,7 @@ class TradeInfo(Base):
     sell_price: Mapped[float] = mapped_column(Float, nullable=True)
     profit: Mapped[float] = mapped_column(Float, nullable=True)
     status: Mapped[str] = mapped_column(String(15), nullable=True)
-    date_time: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow())
+    date_time: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     user: Mapped[int] = mapped_column(ForeignKey("user.id"))
 
 

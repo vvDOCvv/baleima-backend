@@ -109,6 +109,18 @@ async def change_tarde(request: Request, is_superuser: super_user_dependency, db
     return templates.TemplateResponse('trade-change.html', {"request": request, "admin": is_superuser, "trade": trade})
 
 
+@router.get("/trade-info/delete/{trade_id}", response_class=HTMLResponse)
+async def delete_trade(request: Request, is_superuser: super_user_dependency, db: db_dependency, trade_id: int = Path(gt=0)):
+    if not is_superuser:
+        return RedirectResponse(url="/admin/login", status_code=status.HTTP_302_FOUND)
+    
+    stmt = delete(TradeInfo).where(TradeInfo.id == trade_id)
+    await db.execute(stmt)
+    await db.commit()
+    
+    return RedirectResponse(url=f"/admin/trade-info", status_code=status.HTTP_302_FOUND)
+
+
 @router.get("/errors", response_class=HTMLResponse)
 async def trade_errors(request: Request, is_superuser: super_user_dependency, db: db_dependency):
     if not is_superuser:
@@ -130,6 +142,18 @@ async def change_error_msgs(request: Request, is_superuser: super_user_dependenc
     err_msg: ErrorInfoMsgs | None = err_msg_db.scalars().one()
 
     return templates.TemplateResponse("change-err-msg.html", {"request": request, "admin": is_superuser, "err_msg": err_msg})
+
+
+@router.get("/errors/delete/{error_id}", response_class=HTMLResponse)
+async def delete_error(request: Request, is_superuser: super_user_dependency, db: db_dependency, error_id: int = Path(gt=0)):
+    if not is_superuser:
+        return RedirectResponse(url="/admin/login", status_code=status.HTTP_302_FOUND)
+    
+    stmt = delete(ErrorInfoMsgs).where(ErrorInfoMsgs.id == error_id)
+    await db.execute(stmt)
+    await db.commit()
+
+    return RedirectResponse(url="/admin/errors", status_code=status.HTTP_302_FOUND)
 
 
 @router.get("/users", response_class=HTMLResponse)
