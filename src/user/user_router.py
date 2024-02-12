@@ -18,6 +18,7 @@ router = APIRouter(
     responses={404: {"description": "Not Found"}}
 )
 
+
 user_dependency = Annotated[dict, Depends(get_current_user)]
 
 @router.get("", status_code=status.HTTP_200_OK)

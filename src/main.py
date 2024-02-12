@@ -33,9 +33,8 @@ app.add_middleware(
     allow_headers = ["Accept", "Accept-Language", "Content-Language", "Content-Type", "Set-Cookie", "Access-Header", "Access-Control-Header", "Authorization"],
 )
 
-
-app.include_router(router_auth.router)
-app.include_router(user_router.router)
+app.include_router(router_auth.router, prefix="/api")
+app.include_router(user_router.router, prefix="/api")
 app.include_router(admin_router.router)
 
 
