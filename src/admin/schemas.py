@@ -37,19 +37,19 @@ class UpdateUser:
 
     async def update_user(self):
         form = await self.request.form()
-        self.username = form.get("username")
-        self.email = form.get("email")
-        self.phone_number = form.get("phone_number")
-        self.first_name = form.get("first_name")
-        self.last_name = form.get("last_name")
+        self.username = form.get("username").strip()
+        self.email = form.get("email").strip()
+        self.phone_number = form.get("phone_number").strip()
+        self.first_name = form.get("first_name").strip()
+        self.last_name = form.get("last_name").strip()
         self.is_superuser = True if form.get("is_superuser") else False
         self.is_staff = True if form.get("is_staff") else False
         self.for_free = True if form.get("for_free") else False
         self.ban = True if form.get("ban") else False
-        self.mexc_api_key = form.get("mexc_api_key")
-        self.mexc_secret_key = form.get("mexc_secret_key")
+        self.mexc_api_key = form.get("mexc_api_key").strip()
+        self.mexc_secret_key = form.get("mexc_secret_key").strip()
         self.trade_quantity = form.get("trade_quantity")
         self.trade_percent = form.get("trade_percent")
         self.auto_trade = True if form.get("auto_trade") else False
-        self.symbol_to_trade = form.get("symbol_to_trade").upper()
+        self.symbol_to_trade = form.get("symbol_to_trade").upper().strip()
         self.last_paid = datetime.utcnow() if form.get("last_paid") else None

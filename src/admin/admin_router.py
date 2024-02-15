@@ -3,13 +3,13 @@ from starlette import status
 from starlette.responses import RedirectResponse
 from fastapi import APIRouter, Request, status, Query, Path
 from fastapi.responses import HTMLResponse
-from sqlalchemy import select, update, delete, func, desc
+from sqlalchemy import select, delete, func
 from sqlalchemy.engine import Result
 from database.models import User, TradeInfo, ErrorInfoMsgs
-from dependencies import templates, db_dependency
+from database.crud import UserCRUD, TradeCRUD
 from .schemas import UpdateUser, LoginForm
-from .service import login_for_access_token
-from .dependencies import super_user_dependency
+from .services import set_admin_cookie
+from .dependencies import super_user_dependency, templates, db_dependency
 
 
 router = APIRouter(
@@ -18,7 +18,7 @@ router = APIRouter(
 )
 
 @router.get("", response_class=HTMLResponse)
-async def admin_panel(request: Request, is_superuser: super_user_dependency, db: db_dependency):
+async def admin_panel(request: Request, is_superuser: super_user_dependency):
     if not is_superuser:
         return RedirectResponse(url="/admin/login", status_code=status.HTTP_302_FOUND)
 
@@ -26,12 +26,12 @@ async def admin_panel(request: Request, is_superuser: super_user_dependency, db:
 
 
 @router.post("/login", response_class=HTMLResponse)
-async def login(request: Request, db: db_dependency):
+async def login(request: Request):
     try:
         form = LoginForm(request)
         await form.create_user()
         response = RedirectResponse(url="/admin", status_code=status.HTTP_302_FOUND)
-        validate_user_cooke = await login_for_access_token(response=response, form_data=form, db=db)
+        validate_user_cooke = await set_admin_cookie(response=response, form_data=form)
 
         if not validate_user_cooke:
             msg = 'Incorrect Username or Password'
@@ -51,44 +51,38 @@ async def logout(request: Request):
 
 @router.get("/trade-info", response_class=HTMLResponse)
 async def trade_info(
-                    request: Request,
-                    is_superuser: super_user_dependency,
-                    db: db_dependency,
-                    limit: int = Query(100, gt=0),
-                    offset: int = 0,
-                ):
+        request: Request,
+        is_superuser: super_user_dependency,
+        limit: int = Query(100, gt=0, lt=100),
+        offset: int = Query(0, gt=0, lt=100),
+    ):
     if not is_superuser:
         return RedirectResponse(url="/admin/login", status_code=status.HTTP_302_FOUND)
 
-    count_trades = await db.scalar(func.count(TradeInfo.id))
+    trade_crud = TradeCRUD()
+
+    count_and_tp = await trade_crud.get_count_trades_profit()
 
     pages: int = 1
-    if count_trades > 100:
-        pages = math.floor(count_trades / 100)
+    if count_and_tp["count"] > 100:
+        pages = math.ceil(count_and_tp["count"] / 100)
 
     current_page: int = 1
-    if offset >= 100:
+    if offset > 100:
         current_page = math.floor(offset / 100)
 
-    stmt_total_profit = select(func.sum(TradeInfo.profit)).where(TradeInfo.status == "FILLED")
-    res_total_profit: Result = await db.execute(stmt_total_profit)
-    res_total_profit = res_total_profit.scalar()
-
-    if res_total_profit:
-        total_profit = round(res_total_profit, 6)
+    if count_and_tp["total_profit"]:
+        total_profit = round(count_and_tp["total_profit"], 6)
     else:
         total_profit = 0
 
-    stmt = select(TradeInfo).limit(limit).offset(offset).order_by(TradeInfo.id.desc())
-    trades_db: Result = await db.execute(stmt)
-
-    trades = trades_db.scalars().all()
+    trades = await trade_crud.get_all_trades(limit=limit, offset=offset)
 
     context = {
         "request": request,
         "trades": trades,
         "admin": is_superuser,
-        "count_trades": count_trades,
+        "count_trades": count_and_tp["count"],
         "pages": pages,
         "current_page": current_page,
         "total_profit": total_profit
@@ -98,25 +92,22 @@ async def trade_info(
 
 
 @router.get("/trade-info/{trade_id}", response_class=HTMLResponse)
-async def change_tarde(request: Request, is_superuser: super_user_dependency, db: db_dependency, trade_id: int = Path(gt=0)):
+async def change_tarde(request: Request, is_superuser: super_user_dependency, trade_id: int = Path(gt=0)):
     if not is_superuser:
         return RedirectResponse(url="/admin/login", status_code=status.HTTP_302_FOUND)
 
-    stmt = select(TradeInfo).where(TradeInfo.id == trade_id)
-    trade_db: Result = await db.execute(stmt)
-    trade: TradeInfo | None = trade_db.scalars().one()
+    trade: TradeInfo | None = await TradeCRUD.get_trade_info(trade_id=trade_id)
 
     return templates.TemplateResponse('trade-change.html', {"request": request, "admin": is_superuser, "trade": trade})
 
 
 @router.get("/trade-info/delete/{trade_id}", response_class=HTMLResponse)
-async def delete_trade(request: Request, is_superuser: super_user_dependency, db: db_dependency, trade_id: int = Path(gt=0)):
+async def delete_trade(request: Request, is_superuser: super_user_dependency, trade_id: int = Path(gt=0)):
     if not is_superuser:
         return RedirectResponse(url="/admin/login", status_code=status.HTTP_302_FOUND)
     
-    stmt = delete(TradeInfo).where(TradeInfo.id == trade_id)
-    await db.execute(stmt)
-    await db.commit()
+    trade_crud = await TradeCRUD.delete_trade(trade_id=trade_id)
+    print("deleted", trade_crud, trade_id, '-------------')
     
     return RedirectResponse(url=f"/admin/trade-info", status_code=status.HTTP_302_FOUND)
 
@@ -157,93 +148,80 @@ async def delete_error(request: Request, is_superuser: super_user_dependency, db
 
 
 @router.get("/users", response_class=HTMLResponse)
-async def get_users(request: Request, is_superuser: super_user_dependency, db: db_dependency):
+async def get_users(request: Request, is_superuser: super_user_dependency):
     if not is_superuser:
         return RedirectResponse(url="/admin/login", status_code=status.HTTP_302_FOUND)
 
-    stmt = select(User)
-    users_db: Result = await db.execute(stmt)
-    users = users_db.scalars().all()
-
+    users = await UserCRUD.get_all_users()
     return templates.TemplateResponse("users.html", {"request": request, "admin": is_superuser, "users": users})
 
 
 @router.get("/users/user/{user_id}", response_class=HTMLResponse)
-async def user_info(request: Request, is_superuser: super_user_dependency, db: db_dependency, user_id: int = Path(gt=0)):
+async def user_info(request: Request, is_superuser: super_user_dependency, user_id: int = Path(gt=0)):
     if not is_superuser:
         return RedirectResponse(url="/admin/login", status_code=status.HTTP_302_FOUND)
+    
+    user_crud = UserCRUD(user_id=user_id)
+    user: User = await user_crud.get_user()
 
-    stmt_user = select(User).where(User.id == user_id)
-    user_db: Result = await db.execute(stmt_user)
-    try:
-        user: User = user_db.scalar()
-    except:
+    if not user:
         return RedirectResponse(url="/admin/users", status_code=status.HTTP_302_FOUND)
 
-    stmt_tarde = select(TradeInfo).where(TradeInfo.user == user_id).order_by(desc(TradeInfo.id)).limit(100)
-    trades_db: Result = await db.execute(stmt_tarde)
-    trades: TradeInfo = trades_db.scalars().all()
-
-    stmt_profit = select(func.sum(TradeInfo.profit)).where(TradeInfo.user == user_id, TradeInfo.status == "FILLED")
-    res_profit: Result = await db.execute(stmt_profit)
-    total_profit = res_profit.scalar()
-
-    if not total_profit:
-        total_profit = 0
+    trade_crud = TradeCRUD(user_id=user_id)
+    user_trade_profit = await trade_crud.get_user_trades_profit()
 
     context = {
         "request": request,
         "admin": is_superuser,
         "user": user,
-        "trades": trades,
-        "total_profit": round(total_profit, 6)
+        "trades": user_trade_profit['trades'],
+        "total_profit": user_trade_profit['total_profit']
     }
 
     return templates.TemplateResponse("user-info.html", context=context)
 
 
 @router.post("/users/user/update", status_code=status.HTTP_204_NO_CONTENT)
-async def update_user(request: Request, is_superuser: super_user_dependency, db: db_dependency):
+async def update_user(request: Request, is_superuser: super_user_dependency):
     if not is_superuser:
         return RedirectResponse(url="/admin/login", status_code=status.HTTP_302_FOUND)
-    # try:
-    form = UpdateUser(request)
-    await form.update_user()
+    try:
+        form = UpdateUser(request)
+        await form.update_user()
 
-    stmt = update(User).where(User.username == form.username).values(
-        first_name = form.first_name,
-        last_name = form.last_name,
-        email = form.email,
-        phone_number = form.phone_number,
-        is_superuser = form.is_superuser,
-        mexc_api_key = form.mexc_api_key,
-        mexc_secret_key = form.mexc_secret_key,
-        trade_quantity = int(form.trade_quantity),
-        trade_percent = float(form.trade_percent),
-        symbol_to_trade = form.symbol_to_trade,
-        auto_trade = form.auto_trade,
-        for_free = form.for_free,
-        ban = form.ban,
-        last_paid = form.last_paid,
-        is_staff = form.is_staff,
-    )
-    await db.execute(stmt)
-    await db.commit()
+        user_data = {
+            "email": form.email,
+            "phone_number": form.phone_number,
+            "first_name": form.first_name,
+            "last_name": form.last_name,
+            "is_staff": form.is_staff,
+            "is_superuser": form.is_superuser,
+            "for_free": form.for_free,
+            "ban": form.ban,
+            "auto_trade": form.auto_trade,
+            "trade_quantity": int(form.trade_quantity),
+            "trade_percent": float(form.trade_percent),
+            "symbol_to_trade": form.symbol_to_trade,
+            "mexc_api_key": form.mexc_api_key,
+            "mexc_secret_key": form.mexc_secret_key,
+        }
+        if form.last_paid:
+            user_data["last_paid"] = form.last_paid
 
-    # except:
-    #     return RedirectResponse(url="/admin/users", status_code=status.HTTP_302_FOUND)
+        user_crud = UserCRUD(username=form.username)
+        updated_user: User = await user_crud.update_user(user_data=user_data, is_dict=True)
+
+        if not updated_user:
+            return RedirectResponse(url="/admin/users", status_code=status.HTTP_302_FOUND)
+    
+    except:
+        return RedirectResponse(url="/admin/users", status_code=status.HTTP_302_FOUND)
+
 
 @router.get("/users/user/delete/{username}", response_class=HTMLResponse)
-async def delete_user(request: Request, is_superuser: super_user_dependency, db: db_dependency, username: str):
+async def delete_user(request: Request, is_superuser: super_user_dependency, username: str):
     if not is_superuser:
         return RedirectResponse(url="/admin/login", status_code=status.HTTP_302_FOUND)
-
-    stmt = delete(User).where(User.username == username)
-    try:
-        await db.execute(stmt)
-        await db.commit()
-    except:
-        pass
 
     return RedirectResponse(url="/admin/users", status_code=status.HTTP_302_FOUND)
 

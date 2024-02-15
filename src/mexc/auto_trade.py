@@ -3,7 +3,7 @@ from sqlalchemy import select, update, insert
 from sqlalchemy.engine import Result
 from database.base import async_session_maker as async_session
 from .mexc_basics import MEXCBasics
-from database.models import User, TradeInfo, ErrorInfoMsgs
+from database.models import User, TradeInfo, BuyInFall, ErrorInfoMsgs
 
 
 
@@ -213,26 +213,26 @@ class AutoTrade(MEXCBasics):
                             await db.commit()
 
 
-    async def auto_trade(self, from_user: bool = False):
+    async def auto_trade(self, allow_trade: bool = False):
         try:
             await self.check_db()
 
-            if from_user:
-                last_trade = True
+            if allow_trade:
+                allow_auto_trade = True
             else:
                 stmt = select(TradeInfo.status).where(TradeInfo.user == self.user.id).order_by(TradeInfo.id.desc())
                 async with async_session() as db:
                     res_last_trade: Result = await db.execute(stmt)
                 last_trade = res_last_trade.scalar()
-                last_trade = False if last_trade == "NEW" else True
+                allow_auto_trade = False if last_trade == "NEW" else True
 
             auto_trade = self.user.auto_trade
 
-            if auto_trade and last_trade:
+            if auto_trade and allow_auto_trade:
                 buy_order_id = await self.auto_trade_buy()
                 sell_order_id = await self.auto_trade_sell(buy_order_id=buy_order_id)
 
-                return sell_order_id
+                return {"buy_order_id": buy_order_id,"sell_order_id": sell_order_id}
 
         except Exception as ex:
             stmt = insert(ErrorInfoMsgs).values(error_msg=str(ex))

@@ -8,6 +8,7 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR.parent / "static"
+TEMPLATES_DIR = BASE_DIR.parent / "templates"
 
 DB_HOST = os.environ.get("DB_HOST")
 DB_PORT = os.environ.get("DB_PORT")
@@ -28,3 +29,31 @@ SEKRET_KEY = os.getenv('SEKRET_KEY')
 ALGORITHM = 'HS256'
 
 
+ORIGINS = [
+    "https://athkeeper.com",
+    "https://www.athkeeper.com",
+    "https://api.athkeeper.com",
+    "http://127.0.0.1:8000",
+    "http://127.0.0.1:3000",
+]
+
+ALLOW_METHODS = [
+    "GET",
+    "POST",
+    "PUT",
+    "DELETE",
+    "PATCH",
+    "OPTIONS"
+]
+
+ALLOW_HEADERS = [
+    "Accept",
+    "Accept-Language",
+    "Content-Language",
+    "Content-Type",
+    "Set-Cookie",
+    "Access-Header",
+    "Access-Control-Header",
+    "Access-Control-Allow-Origin",
+    "Authorization"
+]

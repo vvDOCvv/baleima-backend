@@ -5,7 +5,7 @@ from aiohttp import ClientSession
 from sqlalchemy import select, update
 from sqlalchemy.engine import Result
 from database.base import async_session_maker as async_session
-from database.models import User, TradeInfo
+from database.models import User, TradeInfo, BuyInFall
 import hmac, hashlib
 from .auto_trade import AutoTrade
 
@@ -25,7 +25,7 @@ class MakeRequest:
     def make_params(self, new_trades: list):
         parametrs = []
         for new_trade in new_trades:
-            if not new_trade.mexc_api_key or not new_trade.mexc_secret_key:
+            if not new_trade.mexc_api_key or not new_trade.mexc_secret_key or new_trade.sell_order_id:
                 return
             
             timestamp = int(time() * 1000)
@@ -136,5 +136,18 @@ class CheckDB(MakeRequest):
             await trade.auto_trade()
 
 
+
+class BuyInFallTrade:
+    def __init__(self, user: User, bif: BuyInFall, symbol: str) -> None:
+        self.user = user
+        self.bif = bif
+        self.symbol = symbol
+
+
+    async def buy_in_fall(self):
+        stmt = select(BuyInFall).where(BuyInFall.user == self.user.id, BuyInFall.symbol == self.symbol)
+        async with async_session() as db:
+            res: Result = await db.execute(stmt)
+            in_fall_info = res.scalars().all()
 
 
