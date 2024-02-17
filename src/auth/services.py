@@ -5,7 +5,8 @@ from fastapi import Depends, HTTPException, Request
 from passlib.context import CryptContext
 from jose import jwt, JWTError
 from database.models import User
-from database.crud import UserCRUD
+from database.repositories import UserRepository
+from .schemas import UserAuthSchema
 from config import SEKRET_KEY, ALGORITHM
 
 
@@ -42,14 +43,15 @@ def get_current_user(token: Annotated[str, Depends(get_token)]):
         if username is None or user_id is None:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Не удалось подтвердить пользователя.")
 
-        return {"id": user_id, "username": username}
+        user_data = {"id": user_id, "username": username}
+
+        return UserAuthSchema(**user_data)
     except JWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Не удалось подтвердить пользователя.")
 
 
 async def authenticate_user(username: str, password: str):
-    user_crud = UserCRUD(username=username)
-    user_exsists: User | None = await user_crud.get_user()
+    user_exsists: User | None = await UserRepository().find_one(username=username)
 
     if not user_exsists:
         return False

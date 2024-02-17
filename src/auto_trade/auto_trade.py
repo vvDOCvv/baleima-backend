@@ -3,8 +3,7 @@ from sqlalchemy import select, update, insert
 from sqlalchemy.engine import Result
 from database.base import async_session_maker as async_session
 from .mexc_basics import MEXCBasics
-from database.models import User, TradeInfo, BuyInFall, ErrorInfoMsgs
-
+from database.models import User, TradeInfo, ErrorInfoMsgs
 
 
 class AutoTrade(MEXCBasics):
@@ -239,3 +238,4 @@ class AutoTrade(MEXCBasics):
             async with async_session() as db:
                 await db.execute(stmt)
                 await db.commit()
+

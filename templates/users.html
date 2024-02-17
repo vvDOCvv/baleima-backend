@@ -23,18 +23,24 @@
               <table id="result_list">
                 <thead>
                   <tr>
-                    <th scope="col" class="action-checkbox-column">
+                    <th scope="col" class="action-checkbox-column" style="width: 3.5em;">
                       <div class="text">ID</div>
                       <div class="clear"></div>
                     </th>
-                    <th scope="col" class="sortable column-username">
-                      <div class="text"><a>Имя пользователя</a></div>
+                    <th scope="col" class="sortable column-username" style="width: 8em; text-align: center;">
+                      <div class="text"><a>Логин</a></div>
+                    </th>
+                    <th scope="col" class="sortable column-first_name" style="width: 8em;">
+                      <div class="text"><a>Имя</a></div>
                     </th>
                     <th scope="col" class="sortable column-phone_number">
                       <div class="text"><a>Номер телефона</a></div>
                     </th>
-                    <th scope="col" class="sortable column-first_name">
-                      <div class="text"><a>Имя</a></div>
+                    <th scope="col" class="sortable column-trade_usdt_quantity">
+                      <div class="text"><a>Количество торговли</a></div>
+                    </th>
+                    <th scope="col" class="sortable column-trade_percent">
+                      <div class="text"><a>Маржа</a></div>
                     </th>
                     <th scope="col" class="sortable column-is_staff">
                       <div class="text"><a>Статус персонала</a></div>
@@ -42,11 +48,8 @@
                     <th scope="col" class="sortable column-auto_trade">
                       <div class="text"><a>Авто торговля</a></div>
                     </th>
-                    <th scope="col" class="sortable column-trade_percent">
-                      <div class="text"><a>Процент торговли</a></div>
-                    </th>
-                    <th scope="col" class="sortable column-trade_usdt_quantity">
-                      <div class="text"><a>Количество торговли</a></div>
+                    <th scope="col" class="sortable column-auto_trade">
+                      <div class="text"><a>Покупка при падении</a></div>
                     </th>
                     <th scope="col" class="sortable column-ban">
                       <div class="text"><a>Доступ ограничено</a></div>
@@ -56,32 +59,44 @@
                 <tbody>
                   {% for user in users %}
                     <tr>
-                      <td class="action-checkbox">
-                        <div>{{ user.id }}</div>
-                      </td>
-                      <th class="field-username">
+                      <td class="action-checkbox"><div>{{ user.id }}</div></td>
+                      <th class="field-username"  style="text-align: center;">
                         <a href="/admin/users/user/{{ user.id }}">{{ user.username }}</a>
                       </th>
-                      <td class="field-phone_number">{{ user.phone_number }}</td>
-                      <td class="field-first_name">{{ user.first_name }}</td>
-                      <td class="field-is_staff">
+                      {% if user.first_name %}
+                        <td class="field-first_name">{{ user.first_name }}</td>
+                      {% else %}
+                        <td class="field-phone_number" style="text-align: center;">-</td>
+                      {% endif %}
+                      {% if user.phone_number %}
+                        <td class="field-phone_number" style="text-align: center;">{{ user.phone_number }}</td>
+                      {% else %}
+                        <td class="field-phone_number" style="text-align: center;">-</td>
+                      {% endif %}
+                      <td class="field-trade_usdt_quantity"></td>
+                      <td class="field-trade_percent"></td>
+                      <td class="field-is_staff" style="text-align: center;">
                         {% if user.is_superuser %}
                           <img src="/static/admin/img/icon-yes.svg" alt="True">
                         {% else %}
                           <img src="/static/admin/img/icon-no.svg" alt="False">
                         {% endif %}
                       </td>
-                      <td class="field-auto_trade">
+                      <td class="field-auto_trade" style="text-align: center;">
                         {% if user.auto_trade %}
                           <img src="/static/admin/img/icon-yes.svg" alt="True">
                         {% else %}
                           <img src="/static/admin/img/icon-no.svg" alt="False">
                         {% endif %}
-
                       </td>
-                      <td class="field-trade_percent">{{ user.trade_percent }}</td>
-                      <td class="field-trade_usdt_quantity">{{ user.trade_quantity }}</td>
-                      <td class="field-ban">
+                      <td class="field-auto_trade" style="text-align: center;">
+                        {% if user.bif_is_active %}
+                          <img src="/static/admin/img/icon-yes.svg" alt="True">
+                        {% else %}
+                          <img src="/static/admin/img/icon-no.svg" alt="False">
+                        {% endif %}
+                      </td>
+                      <td class="field-ban" style="text-align: center;">
                         {% if user.ban %}
                           <img src="/static/admin/img/icon-yes.svg" alt="True">
                         {% else %}

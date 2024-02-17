@@ -1,6 +1,4 @@
-from datetime import datetime
 from fastapi import Request
-from pydantic import EmailStr
 
 
 class LoginForm:
@@ -18,38 +16,45 @@ class LoginForm:
 class UpdateUser:
     def __init__(self, request: Request) -> None:
         self.request: Request = request
-        self.username: str | None = None
-        self.email: EmailStr | None = None
-        self.phone_number: str | None = None
-        self.first_name: str | None = None
-        self.last_name: str | None = None
-        self.is_superuser: bool | None = None
-        self.is_staff: bool | None = None
-        self.for_free: bool | None = None
-        self.ban: bool | None = None
-        self.mexc_api_key: str | None = None
-        self.mexc_secret_key: str | None = None
-        self.trade_quantity: int | None = None
-        self.trade_percent: float | None = None
-        self.auto_trade: bool | None = None
-        self.symbol_to_trade: str | None = None
-        self.last_paid: datetime | None = None
+
 
     async def update_user(self):
         form = await self.request.form()
-        self.username = form.get("username").strip()
-        self.email = form.get("email").strip()
-        self.phone_number = form.get("phone_number").strip()
-        self.first_name = form.get("first_name").strip()
-        self.last_name = form.get("last_name").strip()
-        self.is_superuser = True if form.get("is_superuser") else False
-        self.is_staff = True if form.get("is_staff") else False
-        self.for_free = True if form.get("for_free") else False
-        self.ban = True if form.get("ban") else False
-        self.mexc_api_key = form.get("mexc_api_key").strip()
-        self.mexc_secret_key = form.get("mexc_secret_key").strip()
-        self.trade_quantity = form.get("trade_quantity")
-        self.trade_percent = form.get("trade_percent")
-        self.auto_trade = True if form.get("auto_trade") else False
-        self.symbol_to_trade = form.get("symbol_to_trade").upper().strip()
-        self.last_paid = datetime.utcnow() if form.get("last_paid") else None
+        to_int = ["trade_quantity", "user_id"]
+        to_float = [
+            "trade_percent",
+            "bif_percent_1",
+            "bif_percent_2",
+            "bif_percent_3",
+        ]
+        to_bool = [
+            "bif_is_active",
+            "auto_trade",
+            "is_superuser",
+            "is_staff",
+            "for_free",
+            "ban"
+        ]
+        user_data = {
+            "bif_is_active": False,
+            "auto_trade": False,
+            "is_superuser": False,
+            "is_staff": False,
+            "for_free": False,
+            "ban": False,
+        }
+        for key, val in form.multi_items():
+            if key in to_bool and val == "on":
+                user_data[key] = True
+            elif key in to_int:
+                user_data[key] = int(val)
+            elif key in to_float:
+                user_data[key] = float(val)
+            elif key == "_save":
+                continue
+            elif val:
+                user_data[key] = val
+        return user_data
+            
+
+

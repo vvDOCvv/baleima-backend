@@ -1,7 +1,7 @@
-__pycache__/
-venv/
-.idea/
-tests/
-.env
+__pycache__
+venv
+.idea
+tests
+.env-dev
 Dockerfile
 docker-compose.yml

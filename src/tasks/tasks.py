@@ -1,6 +1,6 @@
 import asyncio
 from celery import Celery
-from mexc.trade_services import CheckDB
+from auto_trade.services import CheckDB
 from config import REDIS_HOST, REDIS_PORT
 
 

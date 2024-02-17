@@ -32,9 +32,8 @@ ALGORITHM = 'HS256'
 ORIGINS = [
     "https://athkeeper.com",
     "https://www.athkeeper.com",
-    "https://api.athkeeper.com",
-    "http://127.0.0.1:8000",
     "http://127.0.0.1:3000",
+    "http://localhost:3000",
 ]
 
 ALLOW_METHODS = [

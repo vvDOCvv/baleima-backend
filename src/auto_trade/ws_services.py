@@ -3,7 +3,7 @@ from time import time
 from aiohttp import ClientSession
 from websockets.client import connect
 from websockets.exceptions import ConnectionClosedError
-from .trade_services import MakeRequest
+from .services import MakeRequest
 
 
 

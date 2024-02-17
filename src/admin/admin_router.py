@@ -6,7 +6,7 @@ from fastapi.responses import HTMLResponse
 from sqlalchemy import select, delete, func
 from sqlalchemy.engine import Result
 from database.models import User, TradeInfo, ErrorInfoMsgs
-from database.crud import UserCRUD, TradeCRUD
+from database.repositories import UserRepository, TradeInfoRepository
 from .schemas import UpdateUser, LoginForm
 from .services import set_admin_cookie
 from .dependencies import super_user_dependency, templates, db_dependency
@@ -59,33 +59,26 @@ async def trade_info(
     if not is_superuser:
         return RedirectResponse(url="/admin/login", status_code=status.HTTP_302_FOUND)
 
-    trade_crud = TradeCRUD()
-
-    count_and_tp = await trade_crud.get_count_trades_profit()
+    trades = await TradeInfoRepository().find_all(limit=limit, offset=offset)
+    total_profit = await TradeInfoRepository().profits()
+    count_trades = await TradeInfoRepository().count_trades()
 
     pages: int = 1
-    if count_and_tp["count"] > 100:
-        pages = math.ceil(count_and_tp["count"] / 100)
+    if count_trades > 100:
+        pages = math.ceil(count_trades / 100)
 
     current_page: int = 1
     if offset > 100:
         current_page = math.floor(offset / 100)
 
-    if count_and_tp["total_profit"]:
-        total_profit = round(count_and_tp["total_profit"], 6)
-    else:
-        total_profit = 0
-
-    trades = await trade_crud.get_all_trades(limit=limit, offset=offset)
-
     context = {
         "request": request,
         "trades": trades,
         "admin": is_superuser,
-        "count_trades": count_and_tp["count"],
+        "count_trades": count_trades,
         "pages": pages,
         "current_page": current_page,
-        "total_profit": total_profit
+        "total_profit": round(total_profit, 6)
     }
 
     return templates.TemplateResponse('trade-info.html', context=context)
@@ -96,7 +89,7 @@ async def change_tarde(request: Request, is_superuser: super_user_dependency, tr
     if not is_superuser:
         return RedirectResponse(url="/admin/login", status_code=status.HTTP_302_FOUND)
 
-    trade: TradeInfo | None = await TradeCRUD.get_trade_info(trade_id=trade_id)
+    trade: TradeInfo | None = await TradeInfoRepository().find_one(pk=trade_id)
 
     return templates.TemplateResponse('trade-change.html', {"request": request, "admin": is_superuser, "trade": trade})
 
@@ -106,8 +99,7 @@ async def delete_trade(request: Request, is_superuser: super_user_dependency, tr
     if not is_superuser:
         return RedirectResponse(url="/admin/login", status_code=status.HTTP_302_FOUND)
     
-    trade_crud = await TradeCRUD.delete_trade(trade_id=trade_id)
-    print("deleted", trade_crud, trade_id, '-------------')
+    trade_crud = await TradeInfoRepository().delete(pk=trade_id)
     
     return RedirectResponse(url=f"/admin/trade-info", status_code=status.HTTP_302_FOUND)
 
@@ -152,7 +144,7 @@ async def get_users(request: Request, is_superuser: super_user_dependency):
     if not is_superuser:
         return RedirectResponse(url="/admin/login", status_code=status.HTTP_302_FOUND)
 
-    users = await UserCRUD.get_all_users()
+    users: list = await UserRepository().find_all()
     return templates.TemplateResponse("users.html", {"request": request, "admin": is_superuser, "users": users})
 
 
@@ -161,21 +153,22 @@ async def user_info(request: Request, is_superuser: super_user_dependency, user_
     if not is_superuser:
         return RedirectResponse(url="/admin/login", status_code=status.HTTP_302_FOUND)
     
-    user_crud = UserCRUD(user_id=user_id)
-    user: User = await user_crud.get_user()
-
+    user: User = await UserRepository().find_one(pk=user_id)
+    
     if not user:
         return RedirectResponse(url="/admin/users", status_code=status.HTTP_302_FOUND)
-
-    trade_crud = TradeCRUD(user_id=user_id)
-    user_trade_profit = await trade_crud.get_user_trades_profit()
+    
+    trades = await TradeInfoRepository().get_user_trades(user_id=user_id, limit=20)
+    total_profit: int = await TradeInfoRepository().profits(user_id=user_id)
+    count_trades: int = await TradeInfoRepository().count_trades(user_id=user_id)
 
     context = {
         "request": request,
         "admin": is_superuser,
         "user": user,
-        "trades": user_trade_profit['trades'],
-        "total_profit": user_trade_profit['total_profit']
+        "trades": trades,
+        "total_profit": total_profit,
+        "count_trades": count_trades,
     }
 
     return templates.TemplateResponse("user-info.html", context=context)
@@ -187,29 +180,10 @@ async def update_user(request: Request, is_superuser: super_user_dependency):
         return RedirectResponse(url="/admin/login", status_code=status.HTTP_302_FOUND)
     try:
         form = UpdateUser(request)
-        await form.update_user()
+        user_data: dict = await form.update_user()
+        user_id = user_data.pop("user_id")
 
-        user_data = {
-            "email": form.email,
-            "phone_number": form.phone_number,
-            "first_name": form.first_name,
-            "last_name": form.last_name,
-            "is_staff": form.is_staff,
-            "is_superuser": form.is_superuser,
-            "for_free": form.for_free,
-            "ban": form.ban,
-            "auto_trade": form.auto_trade,
-            "trade_quantity": int(form.trade_quantity),
-            "trade_percent": float(form.trade_percent),
-            "symbol_to_trade": form.symbol_to_trade,
-            "mexc_api_key": form.mexc_api_key,
-            "mexc_secret_key": form.mexc_secret_key,
-        }
-        if form.last_paid:
-            user_data["last_paid"] = form.last_paid
-
-        user_crud = UserCRUD(username=form.username)
-        updated_user: User = await user_crud.update_user(user_data=user_data, is_dict=True)
+        updated_user = await UserRepository().update(pk=user_id, data=user_data)
 
         if not updated_user:
             return RedirectResponse(url="/admin/users", status_code=status.HTTP_302_FOUND)

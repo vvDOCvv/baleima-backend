@@ -1,13 +1,13 @@
 from starlette import status
 from typing import Annotated
 from starlette import status
-from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends
-from .schemas import UpdaeUserSettings, UpdaeUser, AutoTradeSchema
-from mexc.mexc_basics import MEXCBasics
+from fastapi import APIRouter, HTTPException, Depends
+from .schemas import UserUpdateSchema
+from auto_trade.mexc_basics import MEXCBasics
 from database.models import User
-from database.crud import UserCRUD, TradeCRUD
 from .dependencies import user_dependency, has_api_keys
-from mexc.auto_trade import AutoTrade
+from database.repositories import UserRepository, TradeInfoRepository
+from auto_trade.auto_trade import AutoTrade
 
 
 router = APIRouter(
@@ -18,61 +18,46 @@ router = APIRouter(
 
 @router.get("", status_code=status.HTTP_200_OK)
 async def get_user(user: user_dependency):
-    user_crud = UserCRUD(username = user.get("username"))
-    user: User | None = await user_crud.get_user()
+    user_db: User | None = await UserRepository().find_one(username=user.username)
 
-    if not user:
+    if not user_db:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
     
-    return user.to_dict()
+    return user_db.to_read()
 
 
-@router.put("/update", status_code=status.HTTP_200_OK)
-async def update_user(user_request: UpdaeUser, user: user_dependency):
-    user_crud = UserCRUD(username=user.get("username"))
-    updated_user: User | None = await user_crud.update_user(user_data=user_request)
+@router.put("", status_code=status.HTTP_200_OK)
+async def update_user(user_request: UserUpdateSchema, user: user_dependency):
+    updated_user: User | None = await UserRepository().update(pk=user.id, data=user_request.deleted_none_dict())
 
     if not updated_user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Not authenticated')
 
-    return updated_user.to_dict()
+    return updated_user.to_read()
 
 
-@router.put("/update-settings", status_code=status.HTTP_200_OK)
-async def update_user_settings(user_request: UpdaeUserSettings, user: user_dependency):
-    user_crud = UserCRUD(username=user.get("username"))
-    updated_user: User | None = await user_crud.update_user(user_data=user_request)
+@router.get("/trades", status_code=status.HTTP_200_OK)
+async def get_user_trades_and_profit(user: user_dependency, limit: int = 10, offset: int = 0):
+    user_trades: list = await TradeInfoRepository().get_user_trades(user_id=user.id, limit=limit, offset=offset)
+    user_ptofit: int = await TradeInfoRepository().profits(user_id=user.id)
+
+    return {"user_trades": user_trades, "user_profit": round(user_ptofit, 6)}
+
+
+@router.post("/trades", status_code=status.HTTP_200_OK)
+async def start_auto_trade(auto_trade: bool, user: Annotated[User, Depends(has_api_keys)]):
+    updated_user = await UserRepository().update(pk=user.id, data={"auto_trade": auto_trade})
     
-    if not updated_user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Not authenticated')
-
-    return updated_user.to_dict()
-
-
-@router.get("/get-all-trades", status_code=status.HTTP_200_OK)
-async def trades(user: user_dependency, limit: int = 10, offset: int = 0):
-    trade_crud = TradeCRUD(user_id=user.get("id"))
-    trade_and_profit: dict = await trade_crud.get_user_trades_profit(limit=limit, offset=offset)
-
-    return trade_and_profit
-
-
-@router.post("/auto-trade", status_code=status.HTTP_200_OK)
-async def start_auto_trade(set_trade: AutoTradeSchema, user: Annotated[User, Depends(has_api_keys)], background_tasks: BackgroundTasks):
-    trade_crud = TradeCRUD(user_id=user.id)
-    auto_trade = await trade_crud.set_auto_trade(auto_trade=set_trade.auto_trade)
-
-    if auto_trade:
+    if auto_trade and updated_user:
         trade = AutoTrade(
             mexc_key=user.mexc_api_key,
             mexc_secret=user.mexc_secret_key,
             user=user
         )
-        background_tasks.add_task(trade.auto_trade, allow_trade = True)
-
-        return {"detail": f"Ваш торговый бот по {set_trade.symbol.upper()} запущен"}
+        await trade.auto_trade(allow_trade=True)
+        return {"detail": f"Ваш торговый бот запущен"}
     
-    return {"detail": f"Ваш торговый бот по {set_trade.symbol.upper()} отключен"}
+    return {"detail": f"Ваш торговый бот отключен"}
 
 
 @router.get("/balance", status_code=status.HTTP_200_OK)

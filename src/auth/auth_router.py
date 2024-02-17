@@ -1,35 +1,28 @@
-from typing import Annotated
 from datetime import timedelta
 from starlette import status
-from fastapi import APIRouter, HTTPException, Depends
-from passlib.context import CryptContext
-from sqlalchemy.ext.asyncio import AsyncSession
-from database.base import get_async_session
-from .schemas import Registration, Token, Auth
+from fastapi import APIRouter, HTTPException
+from .schemas import UserRegisterSchema, Token, AuthSchema
 from .services import authenticate_user, create_access_token
 from database.models import User
-from database.crud import UserCRUD
+from database.repositories import UserRepository
 
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-bcrypt_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
-db_dependency = Annotated[AsyncSession, Depends(get_async_session)]
-
 
 @router.post("/registration", status_code=status.HTTP_201_CREATED)
-async def create_new_user(user_request: Registration):
-    user_crud = UserCRUD(username=user_request.username)
-    created_user: User | None = await user_crud.create_user(user_data=user_request)
+async def create_new_user(user_request: UserRegisterSchema):
+    user: User | None = await UserRepository().find_one(username=user_request.username)
 
-    if not created_user:
+    if user:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Такой пользователь уже сущестувет.")
 
-    return created_user
+    created_user: User = await UserRepository().create(data=user_request.deleted_none_dict())
+    return created_user.to_read()
 
 
 @router.post("/token", status_code=status.HTTP_200_OK, response_model=Token)
-async def login_for_access_token(user_request: Auth):
+async def login_for_access_token(user_request: AuthSchema):
     user: User = await authenticate_user(username=user_request.username, password=user_request.password)
 
     if not user:

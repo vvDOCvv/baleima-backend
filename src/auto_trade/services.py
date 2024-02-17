@@ -5,7 +5,7 @@ from aiohttp import ClientSession
 from sqlalchemy import select, update
 from sqlalchemy.engine import Result
 from database.base import async_session_maker as async_session
-from database.models import User, TradeInfo, BuyInFall
+from database.models import User, TradeInfo
 import hmac, hashlib
 from .auto_trade import AutoTrade
 

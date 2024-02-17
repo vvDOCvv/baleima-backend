@@ -10,6 +10,9 @@ class Base(AsyncAttrs, DeclarativeBase):
 
     id: Mapped[int] = mapped_column(primary_key=True, unique=True, index=True, autoincrement=True)
 
+    def to_dict(self):
+        return {key: val for key, val in self.__dict__.items()}
+    
     # @declared_attr.directive
     # def __tablename__(cls) -> str:
         # return cls.__name__.lower()
@@ -23,7 +26,6 @@ class User(Base):
     phone_number: Mapped[str] = mapped_column(String(50), nullable=True)
     first_name: Mapped[str] = mapped_column(String(50), nullable=True)
     last_name: Mapped[str] = mapped_column(String(50), nullable=True)
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_staff: Mapped[bool] = mapped_column(Boolean, default=False)
     is_superuser: Mapped[bool] = mapped_column(Boolean, default=False)
     password: Mapped[str]
@@ -34,59 +36,29 @@ class User(Base):
     mexc_api_key: Mapped[str] = mapped_column(String, nullable=True)
     mexc_secret_key: Mapped[str] = mapped_column(String, nullable=True)
 
-    last_paid: Mapped[datetime] = mapped_column(nullable=True)
+    auto_trade: Mapped[bool] = mapped_column(Boolean, default=False)
+    trade_quantity: Mapped[int] = mapped_column(Integer, default=6)
+    trade_percent: Mapped[float] = mapped_column(Float, default=0.3)
+    symbol_to_trade: Mapped[str] = mapped_column(String, default="KASUSDT")
+
+    bif_is_active: Mapped[bool] = mapped_column(default=True)
+    bif_percent_1: Mapped[float] = mapped_column(default=3)
+    bif_percent_2: Mapped[float] = mapped_column(default=5)
+    bif_percent_3: Mapped[float] = mapped_column(default=7)
+
+    bif_price_1: Mapped[float] = mapped_column(nullable=True)
+    bif_price_2: Mapped[float] = mapped_column(nullable=True)
+    bif_price_3: Mapped[float] = mapped_column(nullable=True)
+
+    last_paid: Mapped[str] = mapped_column(nullable=True)
     last_login: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow())
     date_joined: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow())
 
     trade: Mapped[list['TradeInfo']] = relationship()
-    buy_in_fall: Mapped[list['BuyInFall']] = relationship()
 
-    auto_trade: Mapped[bool] = mapped_column(Boolean, default=False)
-
-    trade_quantity: Mapped[int] = mapped_column(Integer, default=6)
-    trade_percent: Mapped[float] = mapped_column(Float, default=0.3)
-    symbol_to_trade: Mapped[str] = mapped_column(String, default="KASUSDT")
-    
-    def to_dict(self) -> dict:
-        return {
-            "username": self.username,
-            "email": self.email,
-            "phone_number": self.phone_number,
-            "first_name": self.first_name,
-            "last_name": self.last_name,
-            "mexc_api_key": self.mexc_api_key,
-            "mexc_secret_key": self.mexc_secret_key,
-            "trade_quantity": self.trade_quantity,
-            "trade_percent": self.trade_percent,
-            "symbol_to_trade": self.symbol_to_trade,
-            "auto_trade": self.auto_trade,
-            "last_paid": self.last_paid,
-            "date_joined": self.date_joined,
-            "is_active": self.is_active,
-            "is_staff": self.is_staff,
-            "is_superuser": self.is_superuser,   
-        }
-
-    
-class BuyInFall(Base):
-    __tablename__ = "buy_in_fall"
-
-    auto_trade: Mapped[bool] = mapped_column(Boolean, default=False)
-    bif_is_active: Mapped[bool] = mapped_column(default=True)
-
-    trade_quantity: Mapped[int] = mapped_column(Integer, default=6)
-    trade_percent: Mapped[float] = mapped_column(Float, default=0.3)
-    symbol: Mapped[str] = mapped_column(String, default="KASUSDT")
-
-    percent_1: Mapped[float] = mapped_column(default=3)
-    percent_2: Mapped[float] = mapped_column(default=5)
-    percent_3: Mapped[float] = mapped_column(default=7)
-
-    price_1: Mapped[float] = mapped_column(nullable=True)
-    price_2: Mapped[float] = mapped_column(nullable=True)
-    price_3: Mapped[float] = mapped_column(nullable=True)
-
-    user: Mapped[int] = mapped_column(ForeignKey("user.id"))
+    def to_read(self):
+        del_keys = ["password", "last_login", "bif_price_1", "bif_price_2", "bif_price_3"]
+        return {key: val for key, val in self.__dict__.items() if key not in del_keys}
 
 
 class TradeInfo(Base):
