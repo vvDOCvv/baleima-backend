@@ -7,8 +7,8 @@ from auth.services import create_access_token, authenticate_user
 from config import SEKRET_KEY, ALGORITHM
 
 
-async def set_admin_cookie(response: Response, form_data: OAuth2PasswordRequestForm = Depends()):
-    user: User = await authenticate_user(form_data.username, form_data.password)
+async def set_admin_cookie(response: Response, uow, form_data: OAuth2PasswordRequestForm = Depends()):
+    user: User = await authenticate_user(form_data.username, form_data.password, uow)
 
     if not user:
         return False

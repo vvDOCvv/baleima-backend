@@ -1,6 +1,6 @@
 from datetime import datetime
 from sqlalchemy import Integer,String, Boolean, DateTime, Float, ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column, declared_attr
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import DeclarativeBase, relationship
 
@@ -12,10 +12,6 @@ class Base(AsyncAttrs, DeclarativeBase):
 
     def to_dict(self):
         return {key: val for key, val in self.__dict__.items()}
-    
-    # @declared_attr.directive
-    # def __tablename__(cls) -> str:
-        # return cls.__name__.lower()
 
 
 class User(Base):
@@ -32,7 +28,7 @@ class User(Base):
 
     for_free: Mapped[bool] = mapped_column(Boolean, default=False)
     ban: Mapped[bool] = mapped_column(Boolean, default=False)
-    
+
     mexc_api_key: Mapped[str] = mapped_column(String, nullable=True)
     mexc_secret_key: Mapped[str] = mapped_column(String, nullable=True)
 

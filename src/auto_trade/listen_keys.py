@@ -1,16 +1,20 @@
-import asyncio, json
 from time import time
 from aiohttp import ClientSession
-from websockets.client import connect
-from websockets.exceptions import ConnectionClosedError
 from .services import MakeRequest
 
 
-
 class ListenKeys:
+    URL = "https://api.mexc.com"
+
     def __init__(self, api_key: str, secret_key: str) -> None:
         self.api_key: str = api_key
         self.secret_key: str = secret_key
+        self.session: ClientSession = ClientSession(base_url=self.URL)
+
+
+    def __del__(self):
+        if hasattr(self, "session") and self.session:
+            self.session.close()
 
 
     async def get_listen_key(self):
@@ -27,12 +31,11 @@ class ListenKeys:
         headers = {"x-mexc-apikey": self.api_key}
         url = "/api/v3/userDataStream"
 
-        async with ClientSession(base_url="https://api.mexc.com") as session:
-            async with session.request(method=method, url=url, headers=headers, params=params) as response:
-                return await response.json()
+        async with self.session.request(method=method, url=url, headers=headers, params=params) as response:
+            return await response.json()
 
 
-    async def create_listen_key(self):
+    async def create_listen_key(self) -> str | None:
         """Функция для запроса всех ListenKey"""
 
         timestamp = int(time() * 1000)
@@ -45,7 +48,7 @@ class ListenKeys:
         return data.get("listenKey")
 
 
-    async def query_all_listen_keys(self):
+    async def query_all_listen_keys(self) -> str | None:
         """Функция для продления ListenKey (Keep-alive)"""
 
         timestamp = int(time() * 1000)
@@ -58,7 +61,7 @@ class ListenKeys:
         return data.get("listenKey")
 
 
-    async def keep_alive_listen_key(self, listen_key: str):
+    async def keep_alive_listen_key(self, listen_key: str) -> str | None:
         """Функция для продления ListenKey (Keep-alive)"""
 
         timestamp = int(time() * 1000)
@@ -70,7 +73,7 @@ class ListenKeys:
         return data.get("listenKey")
 
 
-    async def delete_listen_key(self, listen_key: str):
+    async def delete_listen_key(self, listen_key: str) -> str | None:
         """ Функция для закрытия ListenKey"""
 
         timestamp = int(time() * 1000)
@@ -81,38 +84,3 @@ class ListenKeys:
 
         data = await self.key_requests(method="delete", params=params)
         return data.get("listenKey")
-
-
-
-
-async def connect_to_ws(api_key: str, secret_key: str):
-    subscription_message = {
-        "method": "SUBSCRIPTION",
-        "params": ["spot@private.orders.v3.api"],
-    }
-
-    lk = ListenKeys(api_key=api_key, secret_key=secret_key)
-    listen_key = await lk.create_listen_key()
-
-    ws_url = f"wss://wbs.mexc.com/ws?listenKey={listen_key}"
-
-    try:
-        async with connect(uri=ws_url) as ws:
-            if ws.open:
-                print("Cpnnection is open")
-                await ws.send(json.dumps(subscription_message))
-
-            while True:
-                msg = await ws.recv()
-
-                print(msg, '----------')
-
-            await ws.close()
-            
-    except ConnectionClosedError:
-        pass
-
-
-
-
-

@@ -1,43 +1,39 @@
 import asyncio
+import hmac, hashlib
 from time import time
 from urllib.parse import urlencode, quote
 from aiohttp import ClientSession
-from sqlalchemy import select, update
-from sqlalchemy.engine import Result
-from database.base import async_session_maker as async_session
-from database.models import User, TradeInfo
-import hmac, hashlib
+from database.utils.unitofwork import UnitOfWork, IUnitOfWork
 from .auto_trade import AutoTrade
+from database.services.auto_trade import AutoTradeService
+from database.services.trades import TradeInfoService
+from database.services.users import UsersService
+from user.schemas import UserSchema
 
 
 class MakeRequest:
-    async def get_new_trades_from_db(self):
-        async with async_session() as db:
-            stmt = (
-                select(User.id, User.mexc_api_key, User.mexc_secret_key, TradeInfo.sell_order_id, TradeInfo.symbol)
-                .join(User)
-                .filter(TradeInfo.status == "NEW")
-            )
-            result: Result = await db.execute(stmt)
-            return result.mappings().all()
+    async def get_user_auto_trade_true(self, uow: IUnitOfWork):
+        return await AutoTradeService().get_user_new_trades(uow=uow)
 
 
-    def make_params(self, new_trades: list):
+    def make_params(self, users: list):
         parametrs = []
-        for new_trade in new_trades:
-            if not new_trade.mexc_api_key or not new_trade.mexc_secret_key or new_trade.sell_order_id:
-                return
-            
-            timestamp = int(time() * 1000)
-            params = {"symbol": new_trade.symbol, "orderId": new_trade.sell_order_id, "recvWindow": 20000}
-            signature = self.make_signature(secret_key=new_trade.mexc_secret_key, timestamp=timestamp, params=params)
 
-            params.update({
-                "signature": signature,
-                "timestamp": timestamp,
-                "mexc_api_key": new_trade.mexc_api_key,
-            })
-            parametrs.append(params)
+        for user in users:
+            if not user["mexc_api_key"] or not user["mexc_secret_key"] or not user["new_trades"]:
+                continue
+
+            for new_trade in user["new_trades"]:
+                timestamp = int(time() * 1000)
+                params = {"symbol": new_trade["symbol"], "orderId": new_trade["sell_order_id"], "recvWindow": 20000}
+                signature = self.make_signature(secret_key=user["mexc_secret_key"], timestamp=timestamp, params=params)
+
+                params.update({
+                    "signature": signature,
+                    "timestamp": timestamp,
+                    "mexc_api_key": user["mexc_api_key"],
+                })
+                parametrs.append(params)
         return parametrs
 
 
@@ -78,17 +74,24 @@ class MakeRequest:
         async with ClientSession(base_url="https://api.mexc.com") as session:
             tasks: list = self.create_tasks(session=session, parametrs=parametrs)
             res = await asyncio.gather(*tasks)
-        return res
+            return res
 
 
 class CheckDB(MakeRequest):
-    async def make_request(self):
-        new_trades: list = await self.get_new_trades_from_db()
+    uow = UnitOfWork()
 
-        if not new_trades:
-            return
-        
-        params: list = self.make_params(new_trades=new_trades)
+    async def make_request(self):
+        users: list = await self.get_user_auto_trade_true(uow=self.uow)
+
+        for user in users:
+            if not user["mexc_api_key"] or not user["mexc_secret_key"]:
+                continue
+
+            if not user["new_trades"]:
+                trade = AutoTrade(user=UserSchema(**user), uow=self.uow)
+                await trade.auto_trade()
+
+        params: list = self.make_params(users=users)
 
         if params:
             return await self.gather_tasks(parametrs=params)
@@ -103,51 +106,26 @@ class CheckDB(MakeRequest):
         for response in resposes:
             match response["status"]:
                 case "FILLED":
-                    stmt = (
-                        update(TradeInfo)
-                        .where(TradeInfo.sell_order_id == response["orderId"])
-                        .values(status = "FILLED")
-                    ).returning(TradeInfo.user)
-
-                    await self.update_db_and_buy(stmt)
+                    res = await TradeInfoService().edit_trade_by_sell_id(
+                        uow=self.uow,
+                        sell_id=response["orderId"],
+                        data={"status": "FILLED"}
+                    )
+                    await self.buy(user_id=res["username"])
 
                 case "CANCELED":
-                    stmt = (
-                        update(TradeInfo)
-                        .where(TradeInfo.sell_order_id == response["orderId"])
-                        .values(status = "CANCELED", profit = 0.0)
-                    ).returning(TradeInfo.user)
-
-                    await self.update_db_and_buy(stmt)
-
-
-    async def update_db_and_buy(self, stmt):
-        async with async_session() as db:
-            result: Result = await db.execute(stmt)
-            user_id = result.scalar()
-            await db.commit()
-
-            user_stmt = select(User).where(User.id == user_id)
-            user_result: Result = await db.execute(user_stmt)
-            user: User = user_result.scalar()
-
-        if user.auto_trade:
-            trade = AutoTrade(mexc_key=user.mexc_api_key, mexc_secret=user.mexc_secret_key, user=user)
-            await trade.auto_trade()
+                    res = await TradeInfoService().edit_trade_by_sell_id(
+                        uow=self.uow,
+                        sell_id=response["orderId"],
+                        data={"status": "CANCELED", "profit": 0.0}
+                    )
+                    await self.buy(username=res["username"])
 
 
+    async def buy(self, username: str):
+        user: dict = await UsersService().get_user(uow=self.uow, username=username)
+        trade = AutoTrade(mexc_key=user["mexc_api_key"], mexc_secret=user["mexc_secret_key"], user=UserSchema(**user))
+        await trade.auto_trade()
 
-class BuyInFallTrade:
-    def __init__(self, user: User, bif: BuyInFall, symbol: str) -> None:
-        self.user = user
-        self.bif = bif
-        self.symbol = symbol
-
-
-    async def buy_in_fall(self):
-        stmt = select(BuyInFall).where(BuyInFall.user == self.user.id, BuyInFall.symbol == self.symbol)
-        async with async_session() as db:
-            res: Result = await db.execute(stmt)
-            in_fall_info = res.scalars().all()
 
 

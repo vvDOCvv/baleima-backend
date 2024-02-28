@@ -2,15 +2,10 @@ from datetime import timedelta, datetime
 from typing import Annotated
 from starlette import status
 from fastapi import Depends, HTTPException, Request
-from passlib.context import CryptContext
 from jose import jwt, JWTError
-from database.models import User
-from database.repositories import UserRepository
-from .schemas import UserAuthSchema
+from .schemas import UserAuthSchema, bcrypt_context
+from database.services.users import UsersService
 from config import SEKRET_KEY, ALGORITHM
-
-
-bcrypt_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
 
 
 def get_token(request: Request):
@@ -22,9 +17,9 @@ def get_token(request: Request):
                 detail="Not authenticated",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-    
+
     bearer, token = authorization.split()
-    
+
     if not token or bearer.lower() != "bearer":
         raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -50,16 +45,16 @@ def get_current_user(token: Annotated[str, Depends(get_token)]):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Не удалось подтвердить пользователя.")
 
 
-async def authenticate_user(username: str, password: str):
-    user_exsists: User | None = await UserRepository().find_one(username=username)
+async def authenticate_user(username: str, password: str, uow):
+    user_exsists = await UsersService().get_user(uow, username)
 
     if not user_exsists:
         return False
 
-    if not bcrypt_context.verify(password, user_exsists.password):
+    if not bcrypt_context.verify(password, user_exsists["password"]):
         return False
 
-    return user_exsists
+    return UserAuthSchema(**user_exsists)
 
 
 def create_access_token(username: str, user_id: int, expire_delta: timedelta):

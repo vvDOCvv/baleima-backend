@@ -1,24 +1,19 @@
 from time import time
-import asyncio
-import aiohttp
+from aiohttp import ClientSession
 import hmac
 import hashlib
 from urllib.parse import urlencode, quote
+from user.schemas import UserSchema
 
 
 class MEXCBasics:
     MEXC_URL = "https://api.mexc.com"
     RECV_WINDOW = 20000
 
-    def __init__(self, mexc_key: str, mexc_secret: str) -> None:
-        self.mexc_key = mexc_key
-        self.mexc_secret = mexc_secret
 
-    async def get_server_time(self) -> int | None:
-        async with aiohttp.ClientSession(base_url=self.MEXC_URL) as session:
-            async with session.get(url="/api/v3/time") as response:
-                res = await response.json()
-                return int(res.get("serverTime"))
+    def __init__(self, user: UserSchema) -> None:
+        self.mexc_key = user.mexc_api_key
+        self.mexc_secret = user.mexc_secret_key
 
 
     def make_signature(self, timestamp: str, params: dict = None) -> str:
@@ -35,7 +30,6 @@ class MEXCBasics:
 
 
     async def account_info(self, url_path: str, method: str = "GET", params: dict = None) -> dict:
-        url = f"{self.MEXC_URL}{url_path}"
         timestamp = int(time() * 1000)
 
         if params:
@@ -52,9 +46,8 @@ class MEXCBasics:
         params["timestamp"] = timestamp
 
 
-        async with aiohttp.ClientSession(base_url=self.MEXC_URL) as session:
-            async with session.request(url=url, method=method, headers=headers, params=params) as response:
-                # response.raise_for_status()
+        async with ClientSession(base_url=self.MEXC_URL) as session:
+            async with session.request(method=method, url=url_path, headers=headers, params=params) as response:
                 return await response.json()
 
 
@@ -100,7 +93,7 @@ class MEXCBasics:
             "orderId": order_id,
             "recvWindow": self.RECV_WINDOW
         }
-        return await self.account_info(url_path=f"/order", params=params)
+        return await self.account_info(url_path=f"/api/v3/order", params=params)
 
 
     async def get_current_open_orders(self, symbol: str) -> dict:
@@ -109,14 +102,13 @@ class MEXCBasics:
 
     async def get_all_orders(self, symbol: str) -> dict:
         return await self.account_info(url_path="/api/v3/allOrders", params={"symbol": symbol})
-    
+
 
     @staticmethod
     async def get_current_price_by_symbol(symbol: str) -> dict:
         url = "https://api.mexc.com/api/v3/ticker/price"
         params = {"symbol": symbol}
 
-        async with aiohttp.ClientSession() as session:
+        async with ClientSession() as session:
             async with session.get(url=url, params=params) as response:
-                # response.raise_for_status()
                 return await response.json()

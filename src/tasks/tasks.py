@@ -14,17 +14,15 @@ def setup_periodic_tasks(sender, **kwargs):
 @celery.task
 def check_db():
     loop = asyncio.get_event_loop()
+    # try:
     loop.run_until_complete(check_db_async())
-
+    # finally:
+    # loop.close()
     # asyncio.run(check_db_async())
+
 
 async def check_db_async():
     check = CheckDB()
     await check.chek_new_trades_and_update_db()
 
 celery.conf.timezone = 'UTC'
-
-
-
-
-

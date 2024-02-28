@@ -5,7 +5,7 @@ from config import STATIC_DIR, ORIGINS, ALLOW_HEADERS, ALLOW_METHODS
 from admin import admin_router
 from user import user_router
 from auth import auth_router
-from athkeeper import base_router
+from base import base_router
 
 
 app = FastAPI()

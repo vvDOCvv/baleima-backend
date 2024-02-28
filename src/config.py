@@ -25,6 +25,10 @@ DB_USER_TEST = os.environ.get("DB_USER_TEST")
 REDIS_HOST = os.environ.get("REDIS_HOST")
 REDIS_PORT = os.environ.get("REDIS_PORT")
 
+# REDIS_HOST = 'localhost'
+# REDIS_PORT = 6379
+
+
 SEKRET_KEY = os.getenv('SEKRET_KEY')
 ALGORITHM = 'HS256'
 

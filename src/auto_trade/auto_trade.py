@@ -1,36 +1,37 @@
-import asyncio, time
-from sqlalchemy import select, update, insert
-from sqlalchemy.engine import Result
-from database.base import async_session_maker as async_session
+import asyncio
 from .mexc_basics import MEXCBasics
-from database.models import User, TradeInfo, ErrorInfoMsgs
+from database.utils.unitofwork import IUnitOfWork
+from database.services.trades import TradeInfoService
+from database.services.error_msgs import ErrorInfoMsgsService
+from user.schemas import UserSchema
 
 
 class AutoTrade(MEXCBasics):
-    def __init__(
-        self,
-        mexc_key: str,
-        mexc_secret: str,
-        user: User,
-    ):
-        super().__init__(mexc_key, mexc_secret)
-        self.user = user
+    def __init__(self, user: UserSchema, uow: IUnitOfWork):
+        super().__init__(user)
+        self.user: UserSchema = user
+        self.uow: IUnitOfWork = uow
 
 
     async def auto_trade_buy(self):
         trade_qty = self.user.trade_quantity
+
         buy_info = await self.buy(trade_qty, self.user.symbol_to_trade)
 
         if 'code' in buy_info:
-            raise Exception(f"Not balance or balance < 6. {self.user.username}: {buy_info}")
+            msg = {"error_msg0": f"{self.user.username}: {buy_info}"}
+            try:
+                await ErrorInfoMsgsService().add_error_msg(uow=self.uow, msg=msg)
+            finally:
+                return
 
-        if 'orderId' not in buy_info:
-            raise Exception(f"Can not buy: {buy_info}")
-        
         await asyncio.sleep(1)
-
         order_info = await self.get_order_info(order_id=buy_info["orderId"], symbol=self.user.symbol_to_trade)
-        buy_price = round(
+
+        if 'code' in order_info:
+            return
+
+        buy_price: float = round(
             float(order_info["cummulativeQuoteQty"]) / float(order_info["origQty"]), 6
         )
 
@@ -43,55 +44,36 @@ class AutoTrade(MEXCBasics):
             "user": self.user.id,
         }
 
-        stmt = insert(TradeInfo).values(**buy_data)
-        async with async_session() as db:
-            await db.execute(stmt)
-            await db.commit()
-
-        return order_info["orderId"]
+        return buy_data
 
 
-    async def auto_trade_sell(self, buy_order_id: str):
-        stmt = select(TradeInfo).where(TradeInfo.buy_order_id == buy_order_id)
-        async with async_session() as db:
-            trade_db: Result = await db.execute(stmt)
-            trade_info: TradeInfo = trade_db.scalar()
-
-        if (
-            not trade_info.buy_price
-            or trade_info.buy_price == 0.0
-            or trade_info.cummulative_qoute_qty == 0
-            or not trade_info.cummulative_qoute_qty
-        ):
-            await self.correct_order(trade_info=trade_info)
-
-        sell_price = self.calculate_sell_price(buy_price=trade_info.buy_price)
+    async def auto_trade_sell(self, buy_data: dict):
+        sell_price = self.calculate_sell_price(buy_price=buy_data["buy_price"])
 
         sell_info = await self.sell(
-            symbol=self.user.symbol_to_trade,
-            sell_price=sell_price,
-            executed_qty=trade_info.buy_quantity,
+            symbol = self.user.symbol_to_trade,
+            sell_price = sell_price,
+            executed_qty = buy_data["buy_quantity"],
         )
 
         profit = self.calculate_profit(
-            buy_price=trade_info.buy_price,
-            sell_price=float(sell_info["price"]),
-            orig_qty=trade_info.buy_quantity,
+            buy_price = buy_data["buy_price"],
+            sell_price = float(sell_info["price"]),
+            orig_qty = buy_data["buy_quantity"],
         )
 
-        data = {
+        sell_data = {
             "sell_order_id": sell_info["orderId"],
             "sell_price": sell_price,
             "profit": profit,
             "status": "NEW",
         }
 
-        stmt = update(TradeInfo).where(TradeInfo.buy_order_id == buy_order_id).values(**data)
-        async with async_session() as db:
-            await db.execute(stmt)
-            await db.commit()
+        data = {**buy_data, **sell_data}
 
-        return sell_info["orderId"]
+        await TradeInfoService().add_trade(uow=self.uow, trade_data=data)
+
+        return data
 
 
     def calculate_sell_price(self, buy_price: float) -> float:
@@ -103,9 +85,9 @@ class AutoTrade(MEXCBasics):
         return round(orig_qty * (float(sell_price) - buy_price), 6)
 
 
-    async def correct_order(self, trade_info: TradeInfo):
+    async def correct_order(self, trade_info: dict):
         buy_order_info = await self.get_order_info(
-            symbol=self.user.symbol_to_trade, order_id=trade_info.buy_order_id
+            symbol=self.user.symbol_to_trade, order_id=trade_info["buy_order_id"]
         )
 
         cummulative_qoute_qty = float(buy_order_info["cummulativeQuoteQty"])
@@ -119,15 +101,12 @@ class AutoTrade(MEXCBasics):
             "status": buy_order_info["status"]
         }
 
-        stmt = update(TradeInfo).where(TradeInfo.buy_order_id == trade_info.buy_order_id).values(**data)
-        async with async_session() as db:
-            await db.execute(stmt)
-            await db.commit()
+        await TradeInfoService().edit_trade_by_buy_id(uow=self.uow, buy_id=trade_info.buy_order_id, trade=data)
 
 
-    async def correct_sell_order(self, trade_info: TradeInfo):
+    async def correct_sell_order(self, trade_info: dict):
         sell_order_info = await self.get_order_info(
-            symbol=self.user.symbol_to_trade, order_id=trade_info.sell_order_id
+            symbol=self.user.symbol_to_trade, order_id=trade_info["sell_order_id"]
         )
 
         data = {
@@ -135,42 +114,33 @@ class AutoTrade(MEXCBasics):
             "status": sell_order_info['status']
         }
 
-        stmt = update(TradeInfo).where(TradeInfo.sell_order_id == trade_info.sell_order_id).values(**data)
-        async with async_session() as db:
-            await db.execute(stmt)
-            await db.commit()
+        await TradeInfoService().edit_trade_by_sell_id(sell_id=trade_info["sell_order_id"], data=data)
 
 
     async def check_db(self):
-        stmt = select(TradeInfo).where(TradeInfo.user == self.user.id)
-        async with async_session() as db:
-            trade_obj: Result = await db.execute(stmt)
-            user_trades_info = trade_obj.scalars().all()
+        user_trades_info = await TradeInfoService().get_user_trades(uow=self.uow, user_id=self.user.id)
 
         if not user_trades_info:
             return
-        
 
         for trade_info in user_trades_info:
-            trade_info: TradeInfo
-
-            if not trade_info.buy_order_id:
+            if not trade_info["buy_order_id"]:
                 continue
 
             if (
-                not trade_info.buy_price
-                or trade_info.buy_price == 0.0
-                or trade_info.cummulative_qoute_qty == 0
-                or not trade_info.cummulative_qoute_qty
+                not trade_info["buy_price"]
+                or trade_info["buy_price"] == 0.0
+                or trade_info["cummulative_qoute_qty"] == 0
+                or not trade_info["cummulative_qoute_qty"]
             ):
                 await self.correct_order(trade_info=trade_info)
 
-            if trade_info.status == "CANCELED" or not trade_info.sell_order_id:
+            if trade_info["status"] == "CANCELED" or not trade_info["sell_order_id"]:
                 continue
 
             if (
-                not trade_info.sell_price
-                or trade_info.sell_price == 0.0
+                not trade_info["sell_price"]
+                or trade_info["sell_price"] == 0.0
             ):
                 await self.correct_sell_order(trade_info=trade_info)
 
@@ -194,48 +164,38 @@ class AutoTrade(MEXCBasics):
                             "profit": profit,
                             "status": sell_order_info["status"]
                         }
-
-                        stmt = update(TradeInfo).where(TradeInfo.sell_order_id == sell_order_info['orderId']).values(**filled_data)
-                        async with async_session() as db:
-                            await db.execute(stmt)
-                            await db.commit()
+                        await TradeInfoService().edit_trade_by_sell_id(uow=self.uow, sell_id=sell_order_info['orderId'], data=filled_data)
 
                     case "CANCELED":
                         canceled_data = {
                             "status": sell_order_info["status"],
                             "profit": 0
                         }
-
-                        stmt = update(TradeInfo).where(TradeInfo.sell_order_id == sell_order_info['orderId']).values(**canceled_data)
-                        async with async_session() as db:
-                            await db.execute(stmt)
-                            await db.commit()
+                        await TradeInfoService().edit_trade_by_sell_id(uow=self.uow, sell_id=sell_order_info['orderId'], data=canceled_data)
 
 
-    async def auto_trade(self, allow_trade: bool = False):
-        try:
-            await self.check_db()
+    async def auto_trade(self):
+        # try:
+        await self.check_db()
 
-            if allow_trade:
-                allow_auto_trade = True
-            else:
-                stmt = select(TradeInfo.status).where(TradeInfo.user == self.user.id).order_by(TradeInfo.id.desc())
-                async with async_session() as db:
-                    res_last_trade: Result = await db.execute(stmt)
-                last_trade = res_last_trade.scalar()
-                allow_auto_trade = False if last_trade == "NEW" else True
+        last_trade = await TradeInfoService().get_user_last_trade(uow=self.uow, user_id=self.user.id)
 
-            auto_trade = self.user.auto_trade
+        if last_trade:
+            last_trade = False if last_trade["status"] == "NEW" else True
 
-            if auto_trade and allow_auto_trade:
-                buy_order_id = await self.auto_trade_buy()
-                sell_order_id = await self.auto_trade_sell(buy_order_id=buy_order_id)
+        auto_trade = self.user.auto_trade
 
-                return {"buy_order_id": buy_order_id,"sell_order_id": sell_order_id}
+        if not auto_trade and not last_trade:
+            return
 
-        except Exception as ex:
-            stmt = insert(ErrorInfoMsgs).values(error_msg=str(ex))
-            async with async_session() as db:
-                await db.execute(stmt)
-                await db.commit()
+        buy_info = await self.auto_trade_buy()
+
+        if buy_info:
+            sell_info = await self.auto_trade_sell(buy_data=buy_info)
+
+        # except Exception as ex:
+        #     stmt = insert(ErrorInfoMsgs).values(error_msg=str(ex))
+        #     async with async_session() as db:
+        #         await db.execute(stmt)
+        #         await db.commit()
 

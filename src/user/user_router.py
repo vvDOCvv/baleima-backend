@@ -1,13 +1,13 @@
 from starlette import status
-from typing import Annotated
 from starlette import status
-from fastapi import APIRouter, HTTPException, Depends
-from .schemas import UserUpdateSchema
+from fastapi import APIRouter, HTTPException
+from .schemas import UserUpdateSchema, UserSchema
 from auto_trade.mexc_basics import MEXCBasics
-from database.models import User
-from .dependencies import user_dependency, has_api_keys
-from database.repositories import UserRepository, TradeInfoRepository
-from auto_trade.auto_trade import AutoTrade
+from .dependencies import user_dependency, user_has_api_keys
+from common.dependencies import UOWDep
+from database.services.users import UsersService
+from database.services.trades import TradeInfoService
+from auto_trade.listen_keys import ListenKeys
 
 
 router = APIRouter(
@@ -17,51 +17,53 @@ router = APIRouter(
 )
 
 @router.get("", status_code=status.HTTP_200_OK)
-async def get_user(user: user_dependency):
-    user_db: User | None = await UserRepository().find_one(username=user.username)
+async def get_user(user: user_dependency, uow: UOWDep):
+    user_db: dict | None = await UsersService().get_user(uow, user.username)
 
     if not user_db:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
-    
-    return user_db.to_read()
+
+    return UserSchema(**user_db)
 
 
 @router.put("", status_code=status.HTTP_200_OK)
-async def update_user(user_request: UserUpdateSchema, user: user_dependency):
-    updated_user: User | None = await UserRepository().update(pk=user.id, data=user_request.deleted_none_dict())
+async def update_user(user_request: UserUpdateSchema, user: user_dependency, uow: UOWDep):
+    updated_user: dict = await UsersService().update_user(uow=uow, user_id=user.id, data=user_request.deleted_none_dict())
 
     if not updated_user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Not authenticated')
 
-    return updated_user.to_read()
+    return UserSchema(**updated_user)
 
 
 @router.get("/trades", status_code=status.HTTP_200_OK)
-async def get_user_trades_and_profit(user: user_dependency, limit: int = 10, offset: int = 0):
-    user_trades: list = await TradeInfoRepository().get_user_trades(user_id=user.id, limit=limit, offset=offset)
-    user_ptofit: int = await TradeInfoRepository().profits(user_id=user.id)
-
-    return {"user_trades": user_trades, "user_profit": round(user_ptofit, 6)}
+async def get_user_trades_and_profit(user: user_dependency, uow: UOWDep, limit: int | None = None, offset: int | None = None):
+    return await TradeInfoService().get_user_trades_count_profit(uow, user.id, limit, offset)
 
 
 @router.post("/trades", status_code=status.HTTP_200_OK)
-async def start_auto_trade(auto_trade: bool, user: Annotated[User, Depends(has_api_keys)]):
-    updated_user = await UserRepository().update(pk=user.id, data={"auto_trade": auto_trade})
-    
+async def start_auto_trade(auto_trade: bool, user: user_has_api_keys, uow: UOWDep):
+    user_mexc = MEXCBasics(mexc_key=user.mexc_api_key, mexc_secret=user.mexc_secret_key)
+
+    try:
+        balance: str = await user_mexc.get_balance(symbol="USDT")
+        balance = float(balance.get("free"))
+    except:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Не удалось получить баланса")
+
+    if balance < 6:
+        raise HTTPException(status_code=status.HTTP_405_METHOD_NOT_ALLOWED, detail="Недостаточно USDT для торговли")
+
+    updated_user = await UsersService().update_user(uow, user.id, data={"auto_trade": auto_trade})
+
     if auto_trade and updated_user:
-        trade = AutoTrade(
-            mexc_key=user.mexc_api_key,
-            mexc_secret=user.mexc_secret_key,
-            user=user
-        )
-        await trade.auto_trade(allow_trade=True)
         return {"detail": f"Ваш торговый бот запущен"}
-    
+
     return {"detail": f"Ваш торговый бот отключен"}
 
 
 @router.get("/balance", status_code=status.HTTP_200_OK)
-async def balance(user: Annotated[User, Depends(has_api_keys)], symbol: str | None = None):
+async def balance(user: user_has_api_keys, symbol: str | None = None):
     mb = MEXCBasics(mexc_key=user.mexc_api_key, mexc_secret=user.mexc_secret_key)
     try:
         balance = await mb.get_balance(symbol=symbol)
@@ -72,6 +74,41 @@ async def balance(user: Annotated[User, Depends(has_api_keys)], symbol: str | No
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Неправильный тикер или у вас нет такой валюты.")
 
     return balance
+
+
+@router.get("/listen-key", status_code=status.HTTP_200_OK)
+async def get_listen_keys(user: user_has_api_keys):
+    get_listen_key = ListenKeys(api_key=user.mexc_api_key, secret_key=user.mexc_secret_key)
+    key = await get_listen_key.query_all_listen_keys()
+
+    if not key:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Ошибка при получении ключа")
+
+    return key
+
+
+@router.put("/listen-key", status_code=status.HTTP_200_OK)
+async def keep_alive_listen_key(user: user_has_api_keys, listen_key: str):
+    get_listen_key = ListenKeys(api_key=user.mexc_api_key, secret_key=user.mexc_secret_key)
+    key = await get_listen_key.keep_alive_listen_key(listen_key=listen_key)
+
+    if not key:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Ошибка при получении ключа")
+
+    return key
+
+
+@router.delete("/listen-key", status_code=status.HTTP_200_OK)
+async def get_listenk_keys(user: user_has_api_keys, listen_key: str):
+    get_listen_key = ListenKeys(api_key=user.mexc_api_key, secret_key=user.mexc_secret_key)
+    key = await get_listen_key.delete_listen_key(listen_key=listen_key)
+
+    if not key:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Ошибка при получении ключа")
+
+    return key
+
+
 
 
 # @router.get("/order-info", status_code=status.HTTP_200_OK)
