@@ -1,6 +1,6 @@
 import asyncio
 from celery import Celery
-from auto_trade.services import CheckDB
+from auto_trade.auto_trade import AutoTrade
 from config import REDIS_HOST, REDIS_PORT
 
 
@@ -22,7 +22,8 @@ def check_db():
 
 
 async def check_db_async():
-    check = CheckDB()
-    await check.chek_new_trades_and_update_db()
+    trade = AutoTrade()
+    await trade.start_auto_trade()
+
 
 celery.conf.timezone = 'UTC'

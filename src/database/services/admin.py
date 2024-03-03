@@ -43,7 +43,7 @@ class AdminService:
             return {
                 "user": UserSchema(**user.to_dict()),
                 "total_profit": user_profit if user_profit else 0,
-                "trades": user_trades if user_trades else [],
+                "trades": [trade.to_dict() for trade in user_trades],
                 "count_trades": user_trades_count if user_trades_count else 0
             }
 

@@ -63,8 +63,8 @@ async def trade_info(
 
     trades_info = await AdminService().get_trades_info(uow=uow, limit=limit, offset=offset)
 
-    count_trades = int(trades_info["count_trades"]) if trades_info["count_trades"] else 0
-    total_profit = int(trades_info["total_profit"]) if trades_info["total_profit"] else 0
+    count_trades = trades_info["count_trades"]
+    total_profit = trades_info["total_profit"]
 
     pages: int = 1
     if count_trades > 100:
@@ -122,7 +122,7 @@ async def change_error_msgs(request: Request, is_superuser: super_user_dependenc
     if not is_superuser:
         return RedirectResponse(url="/admin/login", status_code=status.HTTP_302_FOUND)
 
-    err_msg = await ErrorInfoMsgsService().get_all_errors(uow=uow)
+    err_msg = await ErrorInfoMsgsService().get_error(uow=uow, error_id=error_id)
 
     return templates.TemplateResponse("change-err-msg.html", {"request": request, "admin": is_superuser, "err_msg": err_msg})
 

@@ -14,7 +14,11 @@ class UsersRepository(SQLAlchemyRepository):
 
 
     async def find_all_user_auto_trade_true(self):
-        stmt = select(self.model).filter(self.model.auto_trade == True)
+        stmt = select(self.model).filter(
+            self.model.auto_trade == True,
+            self.model.mexc_api_key.isnot(None),
+            self.model.mexc_secret_key.isnot(None),
+        )
         res: Result = await self.session.execute(stmt)
         return res.scalars().all()
 

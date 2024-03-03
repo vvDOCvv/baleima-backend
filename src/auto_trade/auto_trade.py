@@ -1,66 +1,69 @@
+import logging
 import asyncio
-from .mexc_basics import MEXCBasics
-from database.utils.unitofwork import IUnitOfWork
-from database.services.trades import TradeInfoService
+from time import time
+from aiohttp import ClientSession
+from database.utils.unitofwork import UnitOfWork, IUnitOfWork
 from database.services.error_msgs import ErrorInfoMsgsService
+from database.services.auto_trade import AutoTradeService
+from database.services.trades import TradeInfoService
+from database.services.users import UsersService
 from user.schemas import UserSchema
+from .mexc_basics import MEXCBasics
 
 
-class AutoTrade(MEXCBasics):
-    def __init__(self, user: UserSchema, uow: IUnitOfWork):
-        super().__init__(user)
-        self.user: UserSchema = user
-        self.uow: IUnitOfWork = uow
+
+class AutoTrade:
+    MEXC_URL = "https://api.mexc.com"
 
 
-    async def auto_trade_buy(self):
-        trade_qty = self.user.trade_quantity
+    def __init__(self) -> None:
+        self.uow: IUnitOfWork = UnitOfWork()
 
-        buy_info = await self.buy(trade_qty, self.user.symbol_to_trade)
 
-        if 'code' in buy_info:
-            msg = {"error_msg0": f"{self.user.username}: {buy_info}"}
-            try:
-                await ErrorInfoMsgsService().add_error_msg(uow=self.uow, msg=msg)
-            finally:
-                return
+    async def auto_trade_buy(self, user: UserSchema):
+        mexc = MEXCBasics(user=user)
 
-        await asyncio.sleep(1)
-        order_info = await self.get_order_info(order_id=buy_info["orderId"], symbol=self.user.symbol_to_trade)
-
-        if 'code' in order_info:
+        try:
+            buy_info = await mexc.buy()
+        except Exception as ex:
+            await ErrorInfoMsgsService().add_error_msg(uow=self.uow, msg=str(ex))
+            logging.warning(f"Unexpected error: {ex}")
             return
 
-        buy_price: float = round(
-            float(order_info["cummulativeQuoteQty"]) / float(order_info["origQty"]), 6
-        )
+        await asyncio.sleep(2)
+
+        try:
+            order_info = await mexc.get_order_info(order_id=buy_info["orderId"], symbol=user.symbol_to_trade)
+        except Exception as ex:
+            await ErrorInfoMsgsService().add_error_msg(uow=self.uow, msg=str(ex))
+            logging.warning(f"Unexpected error: {ex}")
+            return
+
+        buy_price: float = round(float(order_info["cummulativeQuoteQty"]) / float(order_info["origQty"]), 6)
 
         buy_data = {
-            "symbol": self.user.symbol_to_trade,
+            "symbol": user.symbol_to_trade,
             "buy_quantity": float(order_info["origQty"]),
             "cummulative_qoute_qty": float(order_info["cummulativeQuoteQty"]),
             "buy_order_id": order_info["orderId"],
             "buy_price": buy_price,
-            "user": self.user.id,
+            "user": user.id,
         }
 
         return buy_data
 
 
-    async def auto_trade_sell(self, buy_data: dict):
-        sell_price = self.calculate_sell_price(buy_price=buy_data["buy_price"])
+    async def auto_trade_sell(self, user: UserSchema, buy_data: dict):
+        mexc = MEXCBasics(user=user)
+        sell_price: float = round(buy_data["buy_price"] * (1 + (user.trade_percent / 100)), 6)
 
-        sell_info = await self.sell(
-            symbol = self.user.symbol_to_trade,
-            sell_price = sell_price,
-            executed_qty = buy_data["buy_quantity"],
-        )
+        try:
+            sell_info = await mexc.sell(sell_price = sell_price, executed_qty = buy_data["buy_quantity"])
+        except Exception as ex:
+            await ErrorInfoMsgsService().add_error_msg(uow=self.uow, msg=ex)
+            return
 
-        profit = self.calculate_profit(
-            buy_price = buy_data["buy_price"],
-            sell_price = float(sell_info["price"]),
-            orig_qty = buy_data["buy_quantity"],
-        )
+        profit: float = round(buy_data["buy_quantity"] * (float(sell_info["price"]) - buy_data["buy_price"]), 6)
 
         sell_data = {
             "sell_order_id": sell_info["orderId"],
@@ -76,126 +79,95 @@ class AutoTrade(MEXCBasics):
         return data
 
 
-    def calculate_sell_price(self, buy_price: float) -> float:
-        percent = self.user.trade_percent
-        return round(buy_price * (1 + (percent / 100)), 6)
+    def make_params(self, users: list):
+        parametrs = []
 
-
-    def calculate_profit(self, buy_price: float, sell_price: str, orig_qty: float) -> float:
-        return round(orig_qty * (float(sell_price) - buy_price), 6)
-
-
-    async def correct_order(self, trade_info: dict):
-        buy_order_info = await self.get_order_info(
-            symbol=self.user.symbol_to_trade, order_id=trade_info["buy_order_id"]
-        )
-
-        cummulative_qoute_qty = float(buy_order_info["cummulativeQuoteQty"])
-        buy_quantity = float(buy_order_info["origQty"])
-        buy_price = round((cummulative_qoute_qty / buy_quantity), 6)
-
-        data = {
-            "cummulative_qoute_qty": cummulative_qoute_qty,
-            "buy_quantity": buy_quantity,
-            "buy_price": buy_price,
-            "status": buy_order_info["status"]
-        }
-
-        await TradeInfoService().edit_trade_by_buy_id(uow=self.uow, buy_id=trade_info.buy_order_id, trade=data)
-
-
-    async def correct_sell_order(self, trade_info: dict):
-        sell_order_info = await self.get_order_info(
-            symbol=self.user.symbol_to_trade, order_id=trade_info["sell_order_id"]
-        )
-
-        data = {
-            "sell_price": sell_order_info['price'],
-            "status": sell_order_info['status']
-        }
-
-        await TradeInfoService().edit_trade_by_sell_id(sell_id=trade_info["sell_order_id"], data=data)
-
-
-    async def check_db(self):
-        user_trades_info = await TradeInfoService().get_user_trades(uow=self.uow, user_id=self.user.id)
-
-        if not user_trades_info:
-            return
-
-        for trade_info in user_trades_info:
-            if not trade_info["buy_order_id"]:
+        for user in users:
+            if not user["mexc_api_key"] or not user["mexc_secret_key"] or not user["new_trades"]:
                 continue
 
-            if (
-                not trade_info["buy_price"]
-                or trade_info["buy_price"] == 0.0
-                or trade_info["cummulative_qoute_qty"] == 0
-                or not trade_info["cummulative_qoute_qty"]
-            ):
-                await self.correct_order(trade_info=trade_info)
+            for new_trade in user["new_trades"]:
+                timestamp = int(time() * 1000)
+                params = {
+                    "symbol": new_trade["symbol"],
+                    "orderId": new_trade["sell_order_id"],
+                    "recvWindow": 20000
+                }
+                signature = MEXCBasics.make_signature(secret_key=user["mexc_secret_key"], timestamp=timestamp, params=params)
 
-            if trade_info["status"] == "CANCELED" or not trade_info["sell_order_id"]:
-                continue
-
-            if (
-                not trade_info["sell_price"]
-                or trade_info["sell_price"] == 0.0
-            ):
-                await self.correct_sell_order(trade_info=trade_info)
-
-            if trade_info.status == 'NEW':
-                sell_order_info = await self.get_order_info(
-                    symbol=self.user.symbol_to_trade, order_id=trade_info.sell_order_id
-                )
-
-                if "status" not in sell_order_info:
-                    continue
-
-                match sell_order_info["status"]:
-                    case "FILLED":
-                        trade_info.sell_price = float(sell_order_info["price"])
-                        profit = self.calculate_profit(
-                            buy_price=trade_info.buy_price,
-                            sell_price=sell_order_info["price"],
-                            orig_qty=trade_info.buy_quantity,
-                        )
-                        filled_data = {
-                            "profit": profit,
-                            "status": sell_order_info["status"]
-                        }
-                        await TradeInfoService().edit_trade_by_sell_id(uow=self.uow, sell_id=sell_order_info['orderId'], data=filled_data)
-
-                    case "CANCELED":
-                        canceled_data = {
-                            "status": sell_order_info["status"],
-                            "profit": 0
-                        }
-                        await TradeInfoService().edit_trade_by_sell_id(uow=self.uow, sell_id=sell_order_info['orderId'], data=canceled_data)
+                params.update({
+                    "signature": signature,
+                    "timestamp": timestamp,
+                    "mexc_api_key": user["mexc_api_key"],
+                })
+                parametrs.append(params)
+        return parametrs
 
 
-    async def auto_trade(self):
-        # try:
-        await self.check_db()
+    async def create_task(self, headers: dict, parametr: dict, session: ClientSession):
+        async with session.get(url="/api/v3/order", headers=headers, params=parametr) as request:
+            return await request.json()
 
-        last_trade = await TradeInfoService().get_user_last_trade(uow=self.uow, user_id=self.user.id)
 
-        if last_trade:
-            last_trade = False if last_trade["status"] == "NEW" else True
+    def create_tasks(self, parametrs: list, session: ClientSession):
+        tasks = []
+        for parametr in parametrs:
+            mexc_api_key = parametr.pop("mexc_api_key")
+            headers = {
+                "Content-Type": "application/json",
+                "x-mexc-apikey": mexc_api_key
+            }
 
-        auto_trade = self.user.auto_trade
+            task = asyncio.create_task(self.create_task(headers=headers, parametr=parametr, session=session))
+            tasks.append(task)
+        return tasks
 
-        if not auto_trade and not last_trade:
+
+    async def gather_tasks(self, parametrs: list):
+        async with ClientSession(base_url=self.MEXC_URL) as session:
+            tasks: list = self.create_tasks(parametrs=parametrs, session=session)
+            return await asyncio.gather(*tasks)
+
+
+    async def start_auto_trade(self):
+
+        users: list = await AutoTradeService().get_users_new_trades(uow=self.uow)
+
+        for user in users:
+            if not user["new_trades"]:
+                await self.auto_buy(user = user)
+
+        params: list = self.make_params(users=users)
+
+        responses = await self.gather_tasks(parametrs=params)
+
+        if not responses:
             return
 
-        buy_info = await self.auto_trade_buy()
+        for response in responses:
+            match response["status"]:
+                case "FILLED":
+                    await TradeInfoService().edit_trade_by_sell_id(
+                        uow=self.uow,
+                        sell_id=response["orderId"],
+                        data={"status": "FILLED"}
+                    )
+
+                case "CANCELED":
+                    await TradeInfoService().edit_trade_by_sell_id(
+                        uow=self.uow,
+                        sell_id=response["orderId"],
+                        data={"status": "CANCELED", "profit": 0.0}
+                    )
+
+
+    async def auto_buy(self, user: dict):
+        last_trade = await TradeInfoService().get_user_last_trade(uow=self.uow, user_id = user["id"])
+
+        if last_trade is None or last_trade["status"] == "NEW":
+            return
+
+        buy_info = await self.auto_trade_buy(user=UserSchema(**user))
 
         if buy_info:
-            sell_info = await self.auto_trade_sell(buy_data=buy_info)
-
-        # except Exception as ex:
-        #     stmt = insert(ErrorInfoMsgs).values(error_msg=str(ex))
-        #     async with async_session() as db:
-        #         await db.execute(stmt)
-        #         await db.commit()
-
+            await self.auto_trade_sell(user = UserSchema(**user), buy_data = buy_info)

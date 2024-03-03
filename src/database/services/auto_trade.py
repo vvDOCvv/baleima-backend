@@ -3,7 +3,7 @@ from database.models import TradeInfo
 
 
 class AutoTradeService:
-    async def get_user_new_trades(self, uow: IUnitOfWork):
+    async def get_users_new_trades(self, uow: IUnitOfWork):
         data = []
 
         async with uow:

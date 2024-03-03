@@ -1,6 +1,6 @@
 from time import time
 from aiohttp import ClientSession
-from .services import MakeRequest
+from .mexc_basics import MEXCBasics
 
 
 class ListenKeys:
@@ -41,7 +41,7 @@ class ListenKeys:
         timestamp = int(time() * 1000)
         params = {
             "timestamp": timestamp,
-            "signature": MakeRequest.make_signature(secret_key=self.secret_key, timestamp=timestamp)
+            "signature": MEXCBasics.make_signature(secret_key=self.secret_key, timestamp=timestamp)
         }
 
         data = await self.key_requests(method="post", params=params)
@@ -54,7 +54,7 @@ class ListenKeys:
         timestamp = int(time() * 1000)
         params = {
             "timestamp": timestamp,
-            "signature": MakeRequest.make_signature(secret_key=self.secret_key, timestamp=timestamp)
+            "signature": MEXCBasics.make_signature(secret_key=self.secret_key, timestamp=timestamp)
         }
 
         data = await self.key_requests(method="get", params=params)
@@ -66,7 +66,7 @@ class ListenKeys:
 
         timestamp = int(time() * 1000)
         params = {"listenKey": listen_key}
-        params["signature"] = MakeRequest.make_signature(secret_key=self.secret_key, params=params, timestamp=timestamp)
+        params["signature"] = MEXCBasics.make_signature(secret_key=self.secret_key, params=params, timestamp=timestamp)
         params["timestamp"] = timestamp
 
         data = await self.key_requests(method="put", params=params)
@@ -79,7 +79,7 @@ class ListenKeys:
         timestamp = int(time() * 1000)
 
         params = {"listenKey": listen_key}
-        params["signature"] = MakeRequest.make_signature(secret_key=self.secret_key, params=params, timestamp=timestamp)
+        params["signature"] = MEXCBasics.make_signature(secret_key=self.secret_key, params=params, timestamp=timestamp)
         params["timestamp"] = timestamp
 
         data = await self.key_requests(method="delete", params=params)

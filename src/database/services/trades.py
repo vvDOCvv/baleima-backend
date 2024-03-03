@@ -63,7 +63,7 @@ class TradeInfoService:
         async with uow:
             res = await uow.trades.edit_trade_by_sell_id(sell_id=sell_id, data=data)
             await uow.commit()
-            return res.to_dict()
+            return res
 
 
     async def delete_trade(self, uow: IUnitOfWork, trade_id: int):

@@ -15,6 +15,12 @@ class UsersService:
             return user.to_dict()
 
 
+    async def get_user_by_id(self, uow: IUnitOfWork, user_id: int):
+        async with uow:
+            user: User = await uow.users.find_one(pk=user_id)
+            return user.to_dict()
+
+
     async def get_user(self, uow: IUnitOfWork, username: str):
         async with uow:
             user: User | None = await uow.users.find_by_username(username=username)
