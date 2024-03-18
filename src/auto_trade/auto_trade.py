@@ -25,12 +25,21 @@ class AutoTrade:
 
         try:
             buy_info = await mexc.buy()
+
+            if "code" in buy_info:
+                if buy_info["code"] == 30004:
+                    msg = f"У пользователья {user.username} не хватает баланс. {buy_info}"
+                    await ErrorInfoMsgsService().add_error_msg(uow=self.uow, msg=msg)
+                    await UsersService().update_user(uow=self.uow, user_id=user.id, data={"auto_trade": False})
+                    logging.info(msg=msg)
+                    return
+
         except Exception as ex:
             await ErrorInfoMsgsService().add_error_msg(uow=self.uow, msg=str(ex))
-            logging.warning(f"Unexpected error: {ex}")
+            logging.error(f"Unexpected error: {ex}. User: {user.username}")
             return
 
-        await asyncio.sleep(2)
+        await asyncio.sleep(1)
 
         try:
             order_info = await mexc.get_order_info(order_id=buy_info["orderId"], symbol=user.symbol_to_trade)
@@ -159,6 +168,10 @@ class AutoTrade:
                         sell_id=response["orderId"],
                         data={"status": "CANCELED", "profit": 0.0}
                     )
+
+
+    async def buy_in_fall(self):
+        pass
 
 
     async def auto_buy(self, user: dict):

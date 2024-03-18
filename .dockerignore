@@ -5,3 +5,4 @@ tests
 .env-dev
 Dockerfile
 docker-compose.yml
+nginx
