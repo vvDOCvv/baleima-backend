@@ -104,7 +104,7 @@ async def delete_trade(request: Request, is_superuser: super_user_dependency, uo
 
     await TradeInfoService().delete_trade(uow=uow, trade_id=trade_id)
 
-    return RedirectResponse(url=f"/admin/trade-info", status_code=status.HTTP_302_FOUND)
+    return RedirectResponse(url=f"/admin/trade", status_code=status.HTTP_302_FOUND)
 
 
 @router.get("/errors", response_class=HTMLResponse)

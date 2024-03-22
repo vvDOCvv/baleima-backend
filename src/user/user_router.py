@@ -8,6 +8,7 @@ from common.dependencies import UOWDep
 from database.services.users import UsersService
 from database.services.trades import TradeInfoService
 from auto_trade.listen_keys import ListenKeys
+from auto_trade.auto_trade import AutoTrade
 
 
 router = APIRouter(
@@ -109,6 +110,10 @@ async def get_listenk_keys(user: user_has_api_keys, listen_key: str):
     return key
 
 
+@router.post("/buy", status_code=status.HTTP_202_ACCEPTED)
+async def buy_(user: user_has_api_keys):
+    trade = AutoTrade()
+    await trade.auto_buy(user=UserSchema(**user), ignore_last_tarede=True)
 
 
 # @router.get("/order-info", status_code=status.HTTP_200_OK)

@@ -5,6 +5,7 @@ from database.models import TradeInfo
 from database.utils.unitofwork import IUnitOfWork, UnitOfWork
 from tasks.tasks import check_db_async
 
+from auto_trade.auto_trade import AutoTrade
 
 from typing import Annotated
 
@@ -21,4 +22,7 @@ async def get_basic_info():
 
     # return {"count": count_trades, "total_profit": total_profit}
     pass
+
+
+
 

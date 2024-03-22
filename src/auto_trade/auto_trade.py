@@ -4,21 +4,17 @@ from time import time
 from aiohttp import ClientSession
 from database.utils.unitofwork import UnitOfWork, IUnitOfWork
 from database.services.error_msgs import ErrorInfoMsgsService
-from database.services.auto_trade import AutoTradeService
 from database.services.trades import TradeInfoService
 from database.services.users import UsersService
 from user.schemas import UserSchema
 from .mexc_basics import MEXCBasics
 
 
-
 class AutoTrade:
     MEXC_URL = "https://api.mexc.com"
 
-
     def __init__(self) -> None:
         self.uow: IUnitOfWork = UnitOfWork()
-
 
     async def auto_trade_buy(self, user: UserSchema):
         mexc = MEXCBasics(user=user)
@@ -80,11 +76,7 @@ class AutoTrade:
             "profit": profit,
             "status": "NEW",
         }
-
         data = {**buy_data, **sell_data}
-
-        await TradeInfoService().add_trade(uow=self.uow, trade_data=data)
-
         return data
 
 
@@ -130,57 +122,82 @@ class AutoTrade:
             task = asyncio.create_task(self.create_task(headers=headers, parametr=parametr, session=session))
             tasks.append(task)
         return tasks
+    
+
+    async def create_current_price_task(self, session: ClientSession, symbol: str):
+        async with session.get(url='/api/v3/ticker/price', params={'symbol': symbol}) as response:
+            return await response.json()
 
 
     async def gather_tasks(self, parametrs: list):
         async with ClientSession(base_url=self.MEXC_URL) as session:
             tasks: list = self.create_tasks(parametrs=parametrs, session=session)
-            return await asyncio.gather(*tasks)
+            current_price: dict = self.create_current_price_task(session=session, symbol='KASUSDT')
+            task_responses: list = await asyncio.gather(*tasks, current_price)
+            return {'current_price': task_responses.pop(-1), 'response': task_responses}
 
 
     async def start_auto_trade(self):
 
-        users: list = await AutoTradeService().get_users_new_trades(uow=self.uow)
+        users: list = await TradeInfoService().get_users_new_trades(uow=self.uow)
 
         for user in users:
             if not user["new_trades"]:
-                await self.auto_buy(user = user)
+                await self.auto_buy(user = user, ignore_last_tarede = True)
 
         params: list = self.make_params(users=users)
 
         responses = await self.gather_tasks(parametrs=params)
-
-        if not responses:
+        
+        if not responses['response']:
             return
-
-        for response in responses:
-            match response["status"]:
-                case "FILLED":
-                    await TradeInfoService().edit_trade_by_sell_id(
-                        uow=self.uow,
-                        sell_id=response["orderId"],
-                        data={"status": "FILLED"}
-                    )
-
-                case "CANCELED":
-                    await TradeInfoService().edit_trade_by_sell_id(
-                        uow=self.uow,
-                        sell_id=response["orderId"],
-                        data={"status": "CANCELED", "profit": 0.0}
-                    )
+        
+        status_filled_and_canceled = list(filter(lambda r: r['status'] == 'FILLED' or r['status'] == 'CANCELED', responses['response']))
+        if status_filled_and_canceled:
+            users = await TradeInfoService().add_filled_and_canceled_to_db(uow=self.uow, filled_and_canceled=status_filled_and_canceled)
+        
+        await self.buy_in_fall(users=users, current_price=responses['current_price'])
 
 
-    async def buy_in_fall(self):
-        pass
+    async def buy_in_fall(self, users: list, current_price: dict):
+        for user in users:
+            if user['last_trade']['status'] != 'NEW':
+                continue
+
+            if user['bif_price_3'] >= float(current_price['price']):
+                await self.auto_buy(user=user, ignore_last_tarede=True, write_bif=False)
+
+            elif user['bif_price_2'] >= float(current_price['price']):
+                await self.auto_buy(user=user, ignore_last_tarede=True, write_bif=False)
+
+            elif user['bif_price_1'] >= float(current_price['price']):
+                await self.auto_buy(user=user, ignore_last_tarede=True, write_bif=False)
 
 
-    async def auto_buy(self, user: dict):
-        last_trade = await TradeInfoService().get_user_last_trade(uow=self.uow, user_id = user["id"])
-
-        if last_trade is None or last_trade["status"] == "NEW":
-            return
+    async def auto_buy(self, user: dict, ignore_last_tarede: bool = False, write_bif: bool = True):
+        if not ignore_last_tarede:
+            last_trade = await TradeInfoService().get_user_last_trade(uow=self.uow, user_id = user["id"])
+            if last_trade is None or last_trade["status"] == "NEW":
+                return
 
         buy_info = await self.auto_trade_buy(user=UserSchema(**user))
+        if not buy_info:
+            return
+        
+        order_data: dict = await self.auto_trade_sell(user = UserSchema(**user), buy_data = buy_info)
+        if not order_data:
+            return
+        
+        if write_bif:
+            bif_data: dict = self.calculate_bif(buy_price=order_data['buy_price'], user=user)
+            await TradeInfoService().add_trade_and_bif(uow=self.uow, trade_data=order_data, bif_data=bif_data)
+            return
 
-        if buy_info:
-            await self.auto_trade_sell(user = UserSchema(**user), buy_data = buy_info)
+        await TradeInfoService().add_trade_and_bif(uow=self.uow, trade_data=order_data)
+
+    
+    def calculate_bif(self, buy_price: float, user: dict):
+        bif_data = {}
+        for i in range(1, 4):
+            bif_data[f'bif_price_{str(i)}'] = buy_price - buy_price / 100 * user[f'bif_percent_{str(i)}']
+        return bif_data

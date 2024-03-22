@@ -38,7 +38,7 @@ class User(Base):
     symbol_to_trade: Mapped[str] = mapped_column(String, default="KASUSDT")
 
     bif_is_active: Mapped[bool] = mapped_column(default=True)
-    bif_percent_1: Mapped[float] = mapped_column(default=3, )
+    bif_percent_1: Mapped[float] = mapped_column(default=3)
     bif_percent_2: Mapped[float] = mapped_column(default=5)
     bif_percent_3: Mapped[float] = mapped_column(default=7)
 

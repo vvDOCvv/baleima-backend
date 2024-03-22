@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-PROD = True
+PROD = False
 
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR.parent / "static"
@@ -36,9 +36,12 @@ if PROD:
 else:
     DB_HOST = "localhost"
     DB_PORT = "5432"
-    DB_NAME = "postgres"
-    DB_USER = "postgres"
-    DB_PASS = "admin"
+    # DB_NAME = "postgres"
+    # DB_USER = "postgres"
+    # DB_PASS = "postgres"
+    DB_NAME = "athkeeper"
+    DB_USER = "athuser"
+    DB_PASS = "ATHkeeper2023"
 
     REDIS_HOST = "localhost"
     REDIS_PORT = 6379

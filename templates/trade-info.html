@@ -63,7 +63,7 @@
                   <tbody>
                     {% for trade in trades %}
                       <tr>
-                        <th class="field-symbol"><a href="/admin/trade-info/{{ trade.id }}">{{ trade.symbol }}</a></th>
+                        <th class="field-symbol"><a href="/admin/trade/{{ trade.id }}">{{ trade.symbol }}</a></th>
                         <td class="field-buy_quantity">{{ trade.buy_quantity }}</td>
                         <td class="field-cummulative_quote_qty">{{ trade.cummulative_qoute_qty }}</td>
                         <td class="field-buy_price">{{ trade.buy_price }}</td>
