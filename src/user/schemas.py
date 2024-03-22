@@ -67,5 +67,8 @@ class UserSchema(Base):
     bif_percent_1: float
     bif_percent_2: float
     bif_percent_3: float
+    bif_price_1: float | None
+    bif_price_3: float | None
+    bif_price_2: float | None
 
     date_joined: datetime

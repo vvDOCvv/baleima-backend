@@ -26,6 +26,9 @@ class UpdateUser:
             "bif_percent_1",
             "bif_percent_2",
             "bif_percent_3",
+            "bif_price_1",
+            "bif_price_2",
+            "bif_price_3",
         ]
         to_bool = [
             "bif_is_active",

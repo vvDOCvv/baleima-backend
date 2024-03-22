@@ -41,7 +41,7 @@ class AutoTrade:
             order_info = await mexc.get_order_info(order_id=buy_info["orderId"], symbol=user.symbol_to_trade)
         except Exception as ex:
             await ErrorInfoMsgsService().add_error_msg(uow=self.uow, msg=str(ex))
-            logging.warning(f"Unexpected error: {ex}")
+            logging.error(f"Unexpected error: {ex}")
             return
 
         buy_price: float = round(float(order_info["cummulativeQuoteQty"]) / float(order_info["origQty"]), 6)
@@ -161,7 +161,12 @@ class AutoTrade:
 
     async def buy_in_fall(self, users: list, current_price: dict):
         for user in users:
-            if user['last_trade']['status'] != 'NEW':
+            if (
+                user['last_trade']['status'] != 'NEW' 
+                or user['bif_price_1'] is None
+                or user['bif_price_2'] is None
+                or user['bif_price_3'] is None
+            ):
                 continue
 
             if user['bif_price_3'] >= float(current_price['price']):
@@ -199,5 +204,5 @@ class AutoTrade:
     def calculate_bif(self, buy_price: float, user: dict):
         bif_data = {}
         for i in range(1, 4):
-            bif_data[f'bif_price_{str(i)}'] = buy_price - buy_price / 100 * user[f'bif_percent_{str(i)}']
+            bif_data[f'bif_price_{str(i)}'] = round(buy_price - buy_price / 100 * user[f'bif_percent_{str(i)}'], 6)
         return bif_data
