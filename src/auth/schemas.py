@@ -12,7 +12,6 @@ class RegistrationSchema(BaseModel):
     last_name: str | None = Field(default=None, min_length=3, max_length=50)
     username: constr(to_lower=True) = Field(min_length=3, max_length=100)
     password: str = Field(min_length=6)
-    is_superuser: bool = True
 
 
     @field_validator("phone_number", "first_name", "last_name", "username", "password")
