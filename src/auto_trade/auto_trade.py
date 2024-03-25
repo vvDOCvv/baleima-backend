@@ -140,9 +140,7 @@ class AutoTrade:
         users: dict = await TradeInfoService().get_users_new_trades(uow = self.uow)
 
         for user in users["auto_trade_users"]:
-            if not user["last_trade"]:
-                continue
-            elif not user['new_trades']:
+            if not user["last_trade"] or not user['new_trades']:
                 await self.auto_buy(user = user)
             elif user['last_trade']['status'] != 'NEW':
                 await self.auto_buy(user = user, write_bif = False)
