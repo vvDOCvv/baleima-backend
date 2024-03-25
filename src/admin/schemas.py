@@ -58,7 +58,10 @@ class UpdateUser:
             elif key in to_int:
                 user_data[key] = int(val)
             elif key in to_float:
-                user_data[key] = float(val)
+                try:
+                    user_data[key] = float(val)
+                except:
+                    user_data[key] = None
             elif key == "_save":
                 continue
             elif val:
