@@ -36,7 +36,10 @@ class UpdateUser:
             "is_superuser",
             "is_staff",
             "for_free",
-            "ban"
+            "ban",
+            "bif_buy_1",
+            "bif_buy_2",
+            "bif_buy_3",
         ]
         user_data = {
             "bif_is_active": False,
@@ -45,6 +48,9 @@ class UpdateUser:
             "is_staff": False,
             "for_free": False,
             "ban": False,
+            "bif_buy_1": False,
+            "bif_buy_2": False,
+            "bif_buy_3": False,
         }
         for key, val in form.multi_items():
             if key in to_bool and val == "on":

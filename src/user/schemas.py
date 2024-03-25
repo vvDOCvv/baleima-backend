@@ -70,5 +70,8 @@ class UserSchema(Base):
     bif_price_1: float | None
     bif_price_3: float | None
     bif_price_2: float | None
+    bif_buy_1: bool
+    bif_buy_2: bool
+    bif_buy_3: bool
 
     date_joined: datetime

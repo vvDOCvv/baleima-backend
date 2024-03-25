@@ -24,5 +24,7 @@ async def get_basic_info():
     pass
 
 
-
-
+@router.get("/test", status_code=status.HTTP_200_OK)
+async def test():
+    trade = AutoTrade()
+    await trade.start_auto_trade()

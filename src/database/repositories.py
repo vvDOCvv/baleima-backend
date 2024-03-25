@@ -12,7 +12,6 @@ class UsersRepository(SQLAlchemyRepository):
         res: Result = await self.session.execute(stmt)
         return res.scalar()
 
-
     async def find_all_user_auto_trade_true(self):
         stmt = select(self.model).filter(
             self.model.auto_trade == True,
@@ -21,6 +20,11 @@ class UsersRepository(SQLAlchemyRepository):
         )
         res: Result = await self.session.execute(stmt)
         return res.scalars().all()
+    
+    async def set_user_bif(self, username: str, data: dict):
+        stmt = update(self.model).where(self.model.username == username).values(**data)
+        await self.session.execute(stmt)
+        # await self.session.commit()
 
 
 class TradesInfoRepository(SQLAlchemyRepository):
@@ -80,6 +84,12 @@ class TradesInfoRepository(SQLAlchemyRepository):
         updated = await self.session.execute(stmt)
         await self.session.commit()
         return updated
+    
+
+    async def get_all_new_trades(self):
+        stmt = select(self.model).filter(self.model.status == "NEW")
+        res: Result = await self.session.execute(stmt)
+        return res.scalars()
 
 
 class ErrorInfoMsgsRepository(SQLAlchemyRepository):

@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-PROD = True
+PROD = False
 
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR.parent / "static"

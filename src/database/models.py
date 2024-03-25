@@ -46,6 +46,10 @@ class User(Base):
     bif_price_2: Mapped[float] = mapped_column(nullable=True)
     bif_price_3: Mapped[float] = mapped_column(nullable=True)
 
+    bif_buy_1: Mapped[bool] = mapped_column(default=False)
+    bif_buy_2: Mapped[bool] = mapped_column(default=False)
+    bif_buy_3: Mapped[bool] = mapped_column(default=False)
+
     last_paid: Mapped[str] = mapped_column(nullable=True)
     last_login: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow())
     date_joined: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow())
