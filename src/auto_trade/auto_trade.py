@@ -143,7 +143,7 @@ class AutoTrade:
             if not user["last_trade"] or not user['new_trades']:
                 await self.auto_buy(user = user)
             elif user['last_trade']['status'] != 'NEW':
-                await self.auto_buy(user = user, write_bif = False)
+                await self.auto_buy(user = user, write_bif = True)
 
         params: list = self.make_params(users = users['all_new_trades'])
 

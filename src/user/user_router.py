@@ -44,13 +44,13 @@ async def get_user_trades_and_profit(user: user_dependency, uow: UOWDep, limit: 
 
 @router.post("/trades", status_code=status.HTTP_200_OK)
 async def start_auto_trade(auto_trade: bool, user: user_has_api_keys, uow: UOWDep):
-    user_mexc = MEXCBasics(mexc_key=user.mexc_api_key, mexc_secret=user.mexc_secret_key)
+    user_mexc = MEXCBasics(user = user)
 
     try:
         balance: str = await user_mexc.get_balance(symbol="USDT")
         balance = float(balance.get("free"))
     except:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Не удалось получить баланса")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Не удалось получить баланса или проверьте провильность API ключа")
 
     if balance < 6:
         raise HTTPException(status_code=status.HTTP_405_METHOD_NOT_ALLOWED, detail="Недостаточно USDT для торговли")
@@ -65,14 +65,14 @@ async def start_auto_trade(auto_trade: bool, user: user_has_api_keys, uow: UOWDe
 
 @router.get("/balance", status_code=status.HTTP_200_OK)
 async def balance(user: user_has_api_keys, symbol: str | None = None):
-    mb = MEXCBasics(mexc_key=user.mexc_api_key, mexc_secret=user.mexc_secret_key)
+    mb = MEXCBasics(user = user)
     try:
         balance = await mb.get_balance(symbol=symbol)
     except:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Ошибка на сервере")
 
     if balance is None:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Неправильный тикер или у вас нет такой валюты.")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Неправильный тикер или у вас нет такой валюты или проверьте провильность API ключа.")
 
     return balance
 
@@ -113,7 +113,12 @@ async def get_listenk_keys(user: user_has_api_keys, listen_key: str):
 @router.post("/buy", status_code=status.HTTP_202_ACCEPTED)
 async def buy_(user: user_has_api_keys):
     trade = AutoTrade()
-    await trade.auto_buy(user=UserSchema(**user), ignore_last_tarede=True)
+    try:
+        await trade.auto_buy(user=user.model_dump(), write_bif=True)
+    except:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Щшибка на сервере или проверьте провильность API ключа")
+    
+    return {"detail": "Куплено"}
 
 
 # @router.get("/order-info", status_code=status.HTTP_200_OK)

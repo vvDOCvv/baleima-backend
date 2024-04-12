@@ -55,7 +55,7 @@ class TradeInfoService:
             total_profit = await uow.trades.get_user_profit(user_id = user_id)
 
         return {
-            "trades": trades if trades else [],
+            "trades": trades [{trade.to_dict() for trade in trades}] if trades else [],
             "count_trades": count_trades if count_trades else 0,
             "total_profit": total_profit if total_profit else 0,
         }

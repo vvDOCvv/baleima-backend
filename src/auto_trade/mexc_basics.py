@@ -44,6 +44,9 @@ class MEXCBasics:
         balances_cor = await self.account_info(method="GET", url_path="/api/v3/account")
         balances = balances_cor.get('balances')
 
+        if not balances:
+            return
+
         if symbol:
             for balance in balances:
                 if balance["asset"] == symbol:
