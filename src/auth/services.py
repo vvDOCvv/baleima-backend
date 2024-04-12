@@ -58,7 +58,7 @@ async def authenticate_user(username: str, password: str, uow):
 
 
 def create_access_token(username: str, user_id: int, expire_delta: timedelta):
-    expires = datetime.utcnow() + expire_delta
+    expires = datetime.now() + expire_delta
     encode = { "id": user_id, "sub": username, "exp": expires}
     return jwt.encode(encode, SEKRET_KEY, ALGORITHM)
 
