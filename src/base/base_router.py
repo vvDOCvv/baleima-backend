@@ -4,6 +4,8 @@ from database.models import TradeInfo
 # from database.repositories import TradeInfoRepository
 from database.utils.unitofwork import IUnitOfWork, UnitOfWork
 from tasks.tasks import check_db_async
+from database.models import Base
+from database.base import engine
 
 from auto_trade.auto_trade import AutoTrade
 
@@ -28,3 +30,10 @@ async def get_basic_info():
 async def test():
     trade = AutoTrade()
     await trade.start_auto_trade()
+
+
+@router.get("/create-db")
+async def create_db():
+    async with engine.begin() as conn:
+        # await conn.run_sync(Base.metadata.drop_all)
+        await conn.run_sync(Base.metadata.create_all)

@@ -37,18 +37,31 @@ class AutoTrade:
 
         await asyncio.sleep(1)
 
+        '''
+        Response example buy_info
+        {'symbol': 'KASUSDT', 'orderId': 'C02__443788050816888833112', 'orderListId': -1, 'price': '0.185689',
+        'origQty': '0', 'type': 'MARKET', 'side': 'BUY', 'transactTime': 1721589552364}
+        '''
+
         try:
             order_info = await mexc.get_order_info(order_id = buy_info["orderId"], symbol = user.symbol_to_trade)
         except Exception as ex:
             await ErrorInfoMsgsService().add_error_msg(uow = self.uow, msg = str(ex))
             logging.error(f"Unexpected error: {ex}")
             return
+        
+        '''
+        Response example order_info
+        {'symbol': 'KASUSDT', 'orderId': 'C02__443788050816888833112', 'orderListId': -1, 'clientOrderId': None, 'price': '0.185689',
+        'origQty': '0', 'executedQty': '36.75', 'cummulativeQuoteQty': '6.4995315', 'status': 'FILLED', 'timeInForce': None, 'type': 'MARKET',
+        'side': 'BUY', 'stopPrice': None, 'icebergQty': None, 'time': 1721589552000, 'updateTime': 1721589552000, 'isWorking': True, 'origQuoteOrderQty': '6.5'}
+        '''
 
-        buy_price: float = round(float(order_info["cummulativeQuoteQty"]) / float(order_info["origQty"]), 6)
+        buy_price: float = round(float(order_info["cummulativeQuoteQty"]) / float(order_info["executedQty"]), 6)
 
         buy_data = {
             "symbol": user.symbol_to_trade,
-            "buy_quantity": float(order_info["origQty"]),
+            "buy_quantity": float(order_info["executedQty"]),
             "cummulative_qoute_qty": float(order_info["cummulativeQuoteQty"]),
             "buy_order_id": order_info["orderId"],
             "buy_price": buy_price,
@@ -67,6 +80,12 @@ class AutoTrade:
         except Exception as ex:
             await ErrorInfoMsgsService().add_error_msg(uow = self.uow, msg=ex)
             return
+        
+        '''
+        Response example sell_info
+        {'symbol': 'KASUSDT', 'orderId': 'C02__443793673331773441112', 'orderListId': -1, 'price': '0.178159',
+        'origQty': '36.59', 'type': 'LIMIT', 'side': 'SELL', 'transactTime': 1721590892876}
+        '''
 
         profit: float = round(buy_data["buy_quantity"] * (float(sell_info["price"]) - buy_data["buy_price"]), 6)
 
