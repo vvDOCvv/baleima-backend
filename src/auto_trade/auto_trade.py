@@ -171,6 +171,18 @@ class AutoTrade:
         if not responses['response']:
             return
         
+        '''
+        {'current_price': {'symbol': 'KASUSDT', 'price': '0.18005'},
+        'response': [
+            {'symbol': 'KASUSDT', 'orderId': 'C02__443808880561025024112', 'orderListId': -1, 'clientOrderId': None, 'price': '0.180468',
+            'origQty': '36.12', 'executedQty': '0', 'cummulativeQuoteQty': '0', 'status': 'NEW', 'timeInForce': None, 'type': 'LIMIT',
+            'side': 'SELL', 'stopPrice': None, 'icebergQty': None, 'time': 1721594519000, 'updateTime': 1721594519000, 'isWorking': True,
+            'origQuoteOrderQty': '6.51850416'}
+        ]}
+        '''
+
+        print(responses, '------------')
+        
         status_filled_and_canceled = list(filter(lambda r: r['status'] == 'FILLED' or r['status'] == 'CANCELED', responses['response']))
         if status_filled_and_canceled:
             await TradeInfoService().add_filled_and_canceled_to_db(uow = self.uow, filled_and_canceled = status_filled_and_canceled)
