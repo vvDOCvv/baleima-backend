@@ -62,8 +62,7 @@ class MEXCBasics:
             "symbol": self.user.symbol_to_trade,
             "side": "BUY",
             "type": "MARKET",
-            # "quoteOrderQty": self.user.trade_quantity,
-            "quoteOrderQty": 6.5,
+            "quoteOrderQty": self.user.trade_quantity,
             "recvWindow": self.RECV_WINDOW,
         }
         return await self.account_info(method="POST", url_path="/api/v3/order", params=params)
