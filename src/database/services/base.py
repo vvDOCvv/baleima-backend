@@ -1,5 +1,4 @@
 from database.utils.unitofwork import IUnitOfWork
-from database.services.base import BaseService
 
 
 class BaseService:
