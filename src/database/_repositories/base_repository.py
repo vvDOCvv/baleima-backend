@@ -1,6 +1,6 @@
 from sqlalchemy import select, Result, func
-from ..utils.repository import SQLAlchemyRepository
-from ..models import User, TradeInfo
+from utils.repository import SQLAlchemyRepository
+from models import User, TradeInfo
 
 
 class BaseRepository(SQLAlchemyRepository):

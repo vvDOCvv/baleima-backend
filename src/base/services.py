@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from ..database._repositories import BaseRepository
+from database._repositories import BaseRepository
 
 
 class BaseService:
