@@ -20,7 +20,7 @@ app.add_middleware(
     allow_headers = ALLOW_HEADERS
 )
 
-app.include_router(base_router.router)
+app.include_router(base_router.router, prefix="/api")
 app.include_router(auth_router.router, prefix="/api")
 app.include_router(user_router.router, prefix="/api")
 app.include_router(admin_router.router)
