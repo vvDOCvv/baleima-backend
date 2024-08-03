@@ -1,12 +1,18 @@
 from abc import ABC, abstractmethod
 from typing import Type
 from database.base import async_session_maker
-from database.repositories import UsersRepository, TradesInfoRepository, ErrorInfoMsgsRepository
+from database.repositories import (
+    UsersRepository,
+    TradesInfoRepository,
+    ErrorInfoMsgsRepository,
+    BaseRepository
+)
 
 
 class IUnitOfWork(ABC):
     users: Type[UsersRepository]
     trades: Type[TradesInfoRepository]
+    base: Type[BaseRepository]
     error_msgs: Type[ErrorInfoMsgsRepository]
 
     @abstractmethod
@@ -36,6 +42,7 @@ class UnitOfWork:
 
         self.users = UsersRepository(self.session)
         self.trades = TradesInfoRepository(self.session)
+        self.base = BaseRepository(self.session)
         self.error_msgs = ErrorInfoMsgsRepository(self.session)
 
 

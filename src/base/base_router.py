@@ -8,8 +8,8 @@ router = APIRouter(prefix = "", tags = ['base'])
 
 
 @router.get("/base-info", status_code = status.HTTP_200_OK)
-async def get_basic_info(db: UOWDep):
-    return await BaseService.get_base_info(db)
+async def get_basic_info(uow: UOWDep):
+    return await BaseService.get_base_info(uow)
 
 
 # @router.get("/test", status_code=status.HTTP_200_OK)
