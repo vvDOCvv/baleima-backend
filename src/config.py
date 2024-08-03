@@ -60,28 +60,9 @@ ALGORITHM = 'HS256'
 
 ORIGINS = [
     "https://athkeeper.com",
-    "https://www.athkeeper.com",
     "http://127.0.0.1:3000",
     "http://localhost:3000",
 ]
 
-ALLOW_METHODS = [
-    "GET",
-    "POST",
-    "PUT",
-    "DELETE",
-    "PATCH",
-    "OPTIONS"
-]
-
-ALLOW_HEADERS = [
-    "Accept",
-    "Accept-Language",
-    "Content-Language",
-    "Content-Type",
-    "Set-Cookie",
-    "Access-Header",
-    "Access-Control-Header",
-    "Access-Control-Allow-Origin",
-    "Authorization"
-]
+ALLOW_METHODS = ['*']
+ALLOW_HEADERS = ['*']
