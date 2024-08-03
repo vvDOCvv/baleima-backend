@@ -1,7 +1,8 @@
 from starlette import status
 from fastapi import APIRouter
 from common.dependencies import UOWDep
-from .services import BaseService
+from database.services.base import BaseService
+
 
 
 router = APIRouter(prefix = "", tags = ['base'])
@@ -9,7 +10,7 @@ router = APIRouter(prefix = "", tags = ['base'])
 
 @router.get("/base-info", status_code = status.HTTP_200_OK)
 async def get_basic_info(uow: UOWDep):
-    return await BaseService.get_base_info(uow)
+    return await BaseService().get_base_info(uow)
 
 
 # @router.get("/test", status_code=status.HTTP_200_OK)
